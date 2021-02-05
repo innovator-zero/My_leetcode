@@ -1641,3 +1641,284 @@ class Solution:
         return ans/k
 ```
 
+
+
+# 480
+
+滑动窗口中位数
+
+我的方法：半死做，中位数不变的情况就不用重新算
+
+```python
+class Solution:
+    def medianSlidingWindow(self, nums: List[int], k: int) -> List[float]:
+        left=0
+        right=k
+        ans=[]
+
+        window=sorted(nums[left:right])
+        if k%2==0:
+            pre1=window[k//2-1]
+            pre2=window[k//2]
+            mid=(pre1+pre2)/2
+        else:
+            pre1=window[k//2]
+            mid=pre1
+        ans.append(mid)
+
+        while right<len(nums):
+            delete=nums[left]
+            add=nums[right]
+            left+=1
+            right+=1
+
+            if k%2==0:
+                if not (delete<pre1 and add<pre1) or (delete>pre2 and add>pre2):#删除和添加的同时比两个都小或比两个都大
+                    window=sorted(nums[left:right])
+                    pre1=window[k//2-1]
+                    pre2=window[k//2]
+                    mid=(pre1+pre2)/2
+            else:
+                if not (delete<pre1 and add<pre1) or (delete>pre1 and add>pre1):#删除和添加的同时比前一个中位数小或大
+                    window=sorted(nums[left:right])
+                    pre1=window[k//2]
+                    mid=pre1
+            
+            ans.append(mid)
+            
+        return ans
+```
+
+双堆+延迟删除
+
+建议看题解，细节较多
+
+```python
+class DualHeap:
+    def __init__(self, k: int):
+        # 大根堆，维护较小的一半元素，注意 python 没有大根堆，需要将所有元素取相反数并使用小根堆
+        self.small = list()
+        # 小根堆，维护较大的一半元素
+        self.large = list()
+        # 哈希表，记录「延迟删除」的元素，key 为元素，value 为需要删除的次数
+        self.delayed = collections.Counter()
+
+        self.k = k
+        # small 和 large 当前包含的元素个数，需要扣除被「延迟删除」的元素
+        self.smallSize = 0
+        self.largeSize = 0
+
+
+    # 不断地弹出 heap 的堆顶元素，并且更新哈希表
+    def prune(self, heap: List[int]):
+        while heap:
+            num = heap[0]
+            if heap is self.small:
+                num = -num
+            if num in self.delayed:
+                self.delayed[num] -= 1
+                if self.delayed[num] == 0:
+                    self.delayed.pop(num)
+                heapq.heappop(heap)
+            else:
+                break
+    
+    # 调整 small 和 large 中的元素个数，使得二者的元素个数满足要求
+    def makeBalance(self):
+        if self.smallSize > self.largeSize + 1:
+            # small 比 large 元素多 2 个
+            heapq.heappush(self.large, -self.small[0])
+            heapq.heappop(self.small)
+            self.smallSize -= 1
+            self.largeSize += 1
+            # small 堆顶元素被移除，需要进行 prune
+            self.prune(self.small)
+        elif self.smallSize < self.largeSize:
+            # large 比 small 元素多 1 个
+            heapq.heappush(self.small, -self.large[0])
+            heapq.heappop(self.large)
+            self.smallSize += 1
+            self.largeSize -= 1
+            # large 堆顶元素被移除，需要进行 prune
+            self.prune(self.large)
+
+    def insert(self, num: int):
+        if not self.small or num <= -self.small[0]:
+            heapq.heappush(self.small, -num)
+            self.smallSize += 1
+        else:
+            heapq.heappush(self.large, num)
+            self.largeSize += 1
+        self.makeBalance()
+
+    def erase(self, num: int):
+        self.delayed[num] += 1
+        if num <= -self.small[0]:
+            self.smallSize -= 1
+            if num == -self.small[0]:
+                self.prune(self.small)
+        else:
+            self.largeSize -= 1
+            if num == self.large[0]:
+                self.prune(self.large)
+        self.makeBalance()
+
+    def getMedian(self) -> float:
+        return float(-self.small[0]) if self.k % 2 == 1 else (-self.small[0] + self.large[0]) / 2
+
+
+class Solution:
+    def medianSlidingWindow(self, nums: List[int], k: int) -> List[float]:
+        dh = DualHeap(k)
+        for num in nums[:k]:
+            dh.insert(num)
+        
+        ans = [dh.getMedian()]
+        for i in range(k, len(nums)):
+            dh.insert(nums[i])
+            dh.erase(nums[i - k])
+            ans.append(dh.getMedian())
+        
+        return ans
+```
+
+
+
+# 1208
+
+尽可能使字符串相等
+
+两个字串的位置是相同的，所以先算出每个位置上的开销```diff```
+
+然后用滑动窗口求出在最大预算内```diff```的最大子串和
+
+```ord()```可以获取字符的ascii码
+
+```python
+class Solution:
+    def equalSubstring(self, s: str, t: str, maxCost: int) -> int:
+        diff=[]
+        for i in range(len(s)):
+            diff.append(abs(ord(s[i])-ord(t[i])))
+        
+        left=0
+        right=0
+        ans=0
+        sum_=0
+
+        while right<len(s):
+            sum_+=diff[right]
+            while sum_>maxCost:
+                ans=max(ans,right-left)#不包含right
+                sum_-=diff[left]
+                left+=1
+            
+            ans=max(ans,right-left+1)#包含right
+            right+=1
+        
+        return ans
+```
+
+
+
+# 141
+
+环形链表
+
+要求O(1)的空间复杂度
+
+快慢指针，类似于龟兔赛跑
+
+慢指针每次移动一个，快指针每次移动两个
+
+如果链表有环，则快指针会超过慢指针一圈，即两者相遇，否则两者不会相遇
+
+```python
+class Solution:
+    def hasCycle(self, head: ListNode) -> bool:
+        if (not head) or (not head.next):
+            return False
+        
+        slow=head
+        fast=head.next
+
+        while slow != fast:
+            if (not fast) or (not fast.next):
+                return False
+            
+            slow=slow.next
+            fast=fast.next.next
+
+        return True
+```
+
+
+
+# 155
+
+最小栈
+
+辅助栈方法：元素入栈时，把当前栈的最小值存在辅助栈中
+
+栈中最小值就是辅助栈的栈顶元素
+
+```python
+class MinStack:
+    def __init__(self):
+        self.stack=[]
+        self.min_stack=[math.inf]
+
+    def push(self, x: int) -> None:
+        self.stack.append(x)
+        self.min_stack.append(min(self.min_stack[-1],x))
+
+    def pop(self) -> None:
+        self.stack.pop()
+        self.min_stack.pop()
+
+    def top(self) -> int:
+        return self.stack[-1]
+
+    def getMin(self) -> int:
+        return self.min_stack[-1]
+```
+
+不适用额外空间：
+
+栈中保存和当前最小值的差值，```min_value```为当前栈的最小值
+
+```python
+class MinStack:
+    def __init__(self):
+        self.stack=[]
+        self.min_value=-1
+
+    def push(self, x: int) -> None:
+        if not self.stack:
+            self.stack.append(0)
+            self.min_value=x
+        else:
+            diff=x-self.min_value
+            self.stack.append(diff)
+            if diff<0: #最小值有更新
+                self.min_value=x
+
+    def pop(self) -> None:
+        diff=self.stack.pop()
+        if diff<0: #最小值被pop
+            top=self.min_value
+            self.min_value=top-diff #上一个最小值
+        else:
+            top=self.min_value+diff
+        return top
+
+    def top(self) -> int:
+        if self.stack[-1]<0:
+            return self.min_value  
+        else:
+            return self.stack[-1] + self.min_value
+
+    def getMin(self) -> int:
+        return self.min_value
+```
+
