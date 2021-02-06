@@ -1922,3 +1922,74 @@ class MinStack:
         return self.min_value
 ```
 
+
+
+# 1423
+
+可获得的最大点数
+
+滑动窗口，从最左k个反向滑到最右k个
+
+```python
+class Solution:
+    def maxScore(self, cardPoints: List[int], k: int) -> int:
+        sum_=0
+        n=len(cardPoints)
+
+        for i in range(k):
+            sum_+=cardPoints[i]
+        
+        ans=sum_
+        for i in range(k):
+            sum_-=cardPoints[k-1-i]
+            sum_+=cardPoints[n-1-i]
+            ans=max(ans,sum_)
+        
+        return ans
+```
+
+
+
+# 160
+
+相交链表
+
+特别巧妙的双指针法
+
+两个指针从两个链表头开始遍历，当pA到达尾部时，下一个指向B的头结点，pB到达尾部时，下一个指向A的头结点
+
+如果pA和pB相遇，则该位置为相交结点，因为两个指针走过的距离是一样的
+
+如果两个链表不相交，则其尾结点不同，检查即可
+
+```python
+class Solution:
+    def getIntersectionNode(self, headA: ListNode, headB: ListNode) -> ListNode:
+        if not headA or not headB:
+            return None
+            
+        a=headA
+        b=headB
+        endA=None
+        endB=None
+
+        while a!=b:
+            if not a.next:
+                endA=a
+                a=headB #重定位
+            else:
+                a=a.next
+
+            if not b.next:
+                endB=b
+                b=headA #重定位
+            else:
+                b=b.next
+			
+            #检查尾结点
+            if endA and endB and endA!=endB:
+                return None
+            
+        return a
+```
+
