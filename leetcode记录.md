@@ -1993,3 +1993,35 @@ class Solution:
         return a
 ```
 
+
+
+# 665
+
+非递减序列
+
+只能出现一次递减的情况
+
+如果nums[0]>nums[1]，那么令nums[0]=nums[1]即可，并不会影响到后面，所以不用实际修改
+
+当nums[i+1]<nums[i]时，出现递减的情况，又可分为两种情况：
+
+（1）nums[i+1]>=nums[i-1]，令nums[i]=nums[i-1]即可，不影响后面，不用实际修改；
+
+（2）nums[i+1]<nums[i-1]，要令nums[i+1]=nums[i]，会影响后面的判断，需要实际修改。
+
+```python
+class Solution:
+    def checkPossibility(self, nums: List[int]) -> bool:
+        flag=False
+        for i in range(0,len(nums)-1):
+            if nums[i]>nums[i+1]:
+                if flag: #已经出现过一次
+                    return False
+                flag=True
+
+                if i>0 and nums[i+1]<nums[i-1]:
+                    nums[i+1]=nums[i]
+                
+        return True
+```
+
