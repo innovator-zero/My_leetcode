@@ -2025,3 +2025,54 @@ class Solution:
         return True
 ```
 
+
+
+# 978
+
+最长湍流子数组
+
+滑动窗口找最大长度
+
+用asc表示前两个元素的大小情况，arr[i]>arr[i+1]时asc=1，arr[i]<arr[i+1]时asc=2，相等时为0
+
+如果两个相等，要从下一个开始判断，即当前长度为1
+
+```python
+class Solution:
+    def maxTurbulenceSize(self, arr: List[int]) -> int:
+        if len(arr)==1:
+            return 1
+
+        asc=0
+        ans=1
+        now_len=1
+        for i in range(0,len(arr)-1):
+            if asc==1:
+                if arr[i]<arr[i+1]:
+                    now_len+=1
+                    asc=2
+                elif arr[i]>arr[i+1]:#不满足，重开
+                    now_len=2
+                else:
+                    asc=0
+            elif asc==2:
+                if arr[i]>arr[i+1]:
+                    now_len+=1
+                    asc=1
+                elif arr[i]<arr[i+1]:#不满足，重开
+                    now_len=2
+                else:
+                    asc=0
+            else: #初始化也放在这里
+                if arr[i]>arr[i+1]:
+                    asc=1
+                    now_len=2
+                elif arr[i]<arr[i+1]:
+                    asc=2
+                    now_len=2
+
+            ans=max(ans,now_len)
+        
+        return ans
+```
+
