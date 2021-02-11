@@ -2076,3 +2076,100 @@ class Solution:
         return ans
 ```
 
+
+
+# 703
+
+数据流中的第k大元素
+
+用一个大小为k的最小堆来存储前k大的元素，堆顶就是当前第k大的元素
+
+插入的时候，如果堆的大小大于k，就将堆顶元素弹出
+
+```python
+class KthLargest:
+    def __init__(self, k: int, nums: List[int]):
+        self.heap=Heap()
+        self.k=k
+        for num in nums:
+            self.heap.push(num)
+            if self.heap.size()>k:
+                self.heap.pop()
+        
+    def add(self, val: int) -> int:
+        self.heap.push(val)
+        if self.heap.size()>self.k:
+            self.heap.pop()
+        return self.heap.top()
+
+class Heap:
+    def __init__(self):
+        self.heap=[]
+    
+    def size(self):
+        return len(self.heap)
+    
+    def top(self):
+        if self.size:
+            return self.heap[0]
+        else:
+            return None
+    
+    def push(self,a):
+        """
+        添加元素
+        第一步，把元素加入堆的最后
+        第二步，向上交换
+        """
+        self.heap.append(a)
+        self.swap_up(self.size()-1)
+    
+    def pop(self):
+        """
+        弹出堆顶
+        第一步，记录堆顶元素的值
+        第二步，交换堆顶元素与末尾元素
+        第三步，删除末尾元素
+        第四步，新的堆顶元素向下交换
+        """
+        p=self.heap[0]
+        self.heap[0],self.heap[self.size()-1]=self.heap[self.size()-1],self.heap[0]
+        self.heap.pop()
+        self.swap_down(0)
+        return p
+    
+    def swap_up(self,index):
+        """
+        向上交换
+        如果父节点和当前节点满足交换的关系（小顶堆是父节点元素更大），
+        则持续将当前节点向上交换
+        """
+        while index:
+            father=(index-1)//2
+
+            if self.heap[father]<=self.heap[index]:
+                break
+            
+            self.heap[father],self.heap[index]=self.heap[index],self.heap[father]
+            index=father
+    
+    def swap_down(self,index):
+        """
+        向下交换
+        如果子节点和当前节点满足交换的关系（小顶堆是子节点元素更小），
+        则持续将当前节点向下交换
+        """
+        son=index*2+1
+        while son<self.size():
+            #选子节点中较小的那个
+            if son+1<self.size() and self.heap[son+1]<self.heap[son]:
+                son+=1
+            
+            if self.heap[index]<=self.heap[son]:
+                break
+            
+            self.heap[son],self.heap[index]=self.heap[index],self.heap[son]
+            index=son
+            son=index*2+1
+```
+
