@@ -2173,3 +2173,60 @@ class Heap:
             son=index*2+1
 ```
 
+
+
+# 765
+
+情侣牵手
+
+并查集：如果第i对和第j对坐在一起，就把i和j连起来，代表要交换位置
+
+一个连通分量里的可以形成一个环，沿环的方向交换
+
+每个连通分量大小减1就是要交换的次数
+
+```python
+class Solution:
+    def minSwapsCouples(self, row: List[int]) -> int:
+        cou=len(row)//2
+        fa=[i for i in range(cou)]
+        rank=[1]*cou
+
+        def find(x):
+            if(x == fa[x]):
+                return x
+            else:
+                fa[x] = find(fa[x])  
+                return fa[x]         
+
+        def merge(i, j):
+            x = find(i)
+            y = find(j)    
+            if (rank[x] <= rank[y]):
+                fa[x] = y
+            else:
+                fa[y] = x
+
+            if (rank[x] == rank[y] and x != y):
+                rank[y]+=1  
+        
+        for i in range(cou):
+            l=row[2*i]
+            r=row[2*i+1]
+            merge(l//2,r//2)
+
+        count={}
+        for i in range(cou):
+            f=find(i)
+            if f in count:
+                count[f]+=1
+            else:
+                count[f]=1
+ 
+        ans=0
+        for num in count.values():
+            ans+=num-1
+
+        return ans 
+```
+
