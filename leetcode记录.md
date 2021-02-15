@@ -2230,3 +2230,28 @@ class Solution:
         return ans 
 ```
 
+
+
+# 485
+
+最大连续1的个数
+
+简简单单的遍历
+
+```python
+class Solution:
+    def findMaxConsecutiveOnes(self, nums: List[int]) -> int:
+        ans=0
+        now=0
+        
+        for i in range(len(nums)):
+            if nums[i]==1:
+                now+=1
+            else:
+                ans=max(ans,now)
+                now=0
+        
+        ans=max(ans,now)
+        return ans
+```
+
