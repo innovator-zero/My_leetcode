@@ -2255,3 +2255,23 @@ class Solution:
         return ans
 ```
 
+
+
+# 561
+
+数组拆分I
+
+code很简单，主要是证明
+
+![image-20210216123107172](C:\Users\Yuxiang Lu\AppData\Roaming\Typora\typora-user-images\image-20210216123107172.png)
+
+```python
+class Solution:
+    def arrayPairSum(self, nums: List[int]) -> int:
+        nums=sorted(nums)
+        ans=0
+        for i in range(0,len(nums),2):
+            ans+=nums[i]
+        return ans
+```
+
