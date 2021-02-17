@@ -2275,3 +2275,106 @@ class Solution:
         return ans
 ```
 
+
+
+# 566
+
+重塑矩阵
+
+方法一：一个一个遍历，从旧的放到新的
+
+```python
+class Solution:
+    def matrixReshape(self, nums: List[List[int]], r: int, c: int) -> List[List[int]]:
+        old_r=len(nums)
+        old_c=len(nums[0])
+
+        if not old_r*old_c==r*c:
+            return nums
+
+        m=0
+        n=0
+        ans=[]
+        for i in range(r):
+            ans_r=[]
+            for j in range(c):
+                ans_r.append(nums[m][n])
+                if n==old_c-1:
+                    m+=1
+                    n=0
+                else:
+                    n+=1
+            
+            ans.append(ans_r)
+        
+        return ans
+```
+
+方法二：视为一维数组，直接算下标
+
+```python
+class Solution:
+    def matrixReshape(self, nums: List[List[int]], r: int, c: int) -> List[List[int]]:
+        old_r=len(nums)
+        old_c=len(nums[0])
+
+        if not old_r*old_c==r*c:
+            return nums
+
+        ans=[[0]*c for _ in range(r)]
+        for i in range(r*c):
+            ans[i//c][i%c]=nums[i//old_c][i%old_c]
+        
+        return ans
+```
+
+
+
+# 448
+
+找到所有数组中消失的数字
+
+把自己当作哈希表，原地修改
+
+如果一个数字x出现过，就把nums[x]加上n
+
+因为x可能已经被加过n，所以要先mod一下
+
+最后找出nums[i]<=n的i
+
+```python
+class Solution:
+    def findDisappearedNumbers(self, nums: List[int]) -> List[int]:
+        n=len(nums)
+        for num in nums:
+            x=(num-1)%n
+            nums[x]+=n
+        
+        ans=[]
+        for i in range(n):
+            if nums[i]<=n:
+                ans.append(i+1)
+        
+        return ans
+```
+
+
+
+# 119
+
+杨辉三角II
+
+dp，空间复杂性O(k)，因为会覆盖前面的值，所以每一行中要从后往前计算新的
+
+```python
+class Solution:
+    def getRow(self, rowIndex: int) -> List[int]:
+        ans=[1]*(rowIndex+1)
+
+        for row in range(1,rowIndex+1):
+            for i in range(row-1,0,-1):
+                ans[i]+=ans[i-1]
+            
+        return ans
+```
+
