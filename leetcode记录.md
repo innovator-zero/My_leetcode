@@ -2378,3 +2378,38 @@ class Solution:
         return ans
 ```
 
+
+
+# 995
+
+K连续位的最小翻转次数
+
+关键：某一位置的元素值，跟其前面K-1个元素翻转的次数相关
+
+滑动窗口：前K-1个元素中，哪些位置起始的子区间进行了翻转
+
+滑动窗口的元素个数就是当前位置已经被翻转的次数
+
+如果被翻转了偶数次则不变，否则就变化；如果当前元素还要被翻转，就加到滑动窗口里
+
+当i+K>n时，说明后面剩余的元素不够K个，无法翻转了，就失败了
+
+```python
+class Solution:
+    def minKBitFlips(self, A: List[int], K: int) -> int:
+        n=len(A)
+        que=collections.deque()
+        ans=0
+
+        for i in range(n):
+            if que and que[0]+K<=i:
+                que.popleft()
+            if len(que) % 2==A[i]:
+                if i+K>n:
+                    return -1
+                que.append(i)
+                ans+=1
+        
+        return ans
+```
+
