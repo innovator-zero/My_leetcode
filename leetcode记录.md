@@ -2413,3 +2413,33 @@ class Solution:
         return ans
 ```
 
+
+
+# 1004
+
+最大连续1的个数
+
+滑动窗口，rev表示窗口内0翻转为1的个数
+
+```
+class Solution:
+    def longestOnes(self, A: List[int], K: int) -> int:
+        left=0
+        right=0
+
+        ans=0
+        rev=0
+        while right<len(A):
+            if A[right]==0:
+                while rev>=K:
+                    if A[left]==0:
+                        rev-=1
+                    left+=1
+                rev+=1
+
+            right+=1
+            ans=max(ans,right-left)
+        
+        return ans
+```
+
