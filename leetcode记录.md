@@ -2443,3 +2443,46 @@ class Solution:
         return ans
 ```
 
+
+
+# 1438
+
+绝对值不超过限制的最长连续子数组
+
+滑动窗口+单调队列
+
+用单调队列维护当前窗口的最大值和最小值
+
+queMin单调增，queMax单调减
+
+```python
+class Solution:
+    def longestSubarray(self, nums: List[int], limit: int) -> int:
+        n=len(nums)
+        left=right=0
+        ans=0
+        queMax=deque()
+        queMin=deque()
+
+        while right<n:
+            while queMax and queMax[-1]<nums[right]:
+                queMax.pop()
+            while queMin and queMin[-1]>nums[right]:
+                queMin.pop()
+            
+            queMax.append(nums[right])
+            queMin.append(nums[right])
+
+            while queMin and queMax and queMax[0]-queMin[0]>limit:
+                if nums[left]==queMin[0]:
+                    queMin.popleft()
+                if nums[left]==queMax[0]:
+                    queMax.popleft()
+                left+=1
+            
+            ans=max(ans,right-left+1)
+            right+=1
+        
+        return ans
+```
+
