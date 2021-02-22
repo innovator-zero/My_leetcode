@@ -2486,3 +2486,225 @@ class Solution:
         return ans
 ```
 
+
+
+# 766 
+
+托普利兹矩阵
+
+按对角线遍历，比按行遍历更节约内存
+
+注意矩阵不要越界
+
+```c++
+#include <algorithm>
+class Solution {
+public:
+    bool isToeplitzMatrix(vector<vector<int>>& matrix) {
+        int m=matrix.size();
+        int n=matrix[0].size();
+        if (m==1 || n==1)
+            return true; 
+
+        for(int i=0;i<n-1;i++){
+            int e=matrix[0][i];
+            int l=min(m,n-i);//不越界
+            for(int j=1;j<l;j++){
+                if(matrix[j][i+j]!=e){
+                    return false;
+                }
+            }
+        }
+
+        for (int i=1;i<m-1;i++){
+            int e=matrix[i][0];
+            int l=min(n,m-i);//不越界
+            for(int j=1;j<l;j++){
+                if(matrix[i+j][j]!=e){
+                    return false;
+                }
+            }
+        }
+        return true;
+    }
+};
+```
+
+
+
+# 169
+
+多数元素
+
+查找众数经典算法：摩尔投票法
+
+c（候选者）和m（众数），当前的c遇到相同的，m就+1，否则m-1，m减到0时就换一个c
+
+由于题目说一定存在，就不用再遍历一遍计数了
+
+```c++
+class Solution {
+public:
+    int majorityElement(vector<int>& nums) {
+        int c=nums[0];
+        int m=1;
+        int n=nums.size();
+
+        for (int i=1;i<n;i++){
+            if (m==0){
+                c=nums[i];
+                m=1;
+            }else{
+                if (c==nums[i])
+                    m++;
+                else
+                    m--;
+            }
+        }
+        return c;
+    }
+};
+```
+
+
+
+# 206
+
+反转链表
+
+用两个指针遍历，因为要改next_p的next，所以要把next先存下来
+
+```c++
+class Solution {
+public:
+    ListNode* reverseList(ListNode* head) {
+        ListNode* p=head;
+        if (!head)
+            return nullptr;//当心链表为空
+            
+        ListNode* next_p=head->next;
+        head->next=nullptr;
+
+        while(next_p){
+            ListNode* tmp=next_p->next;
+            next_p->next=p;
+            p=next_p;
+            next_p=tmp;
+        }
+
+        return p;
+    }
+};
+```
+
+递归：head->next之后已经反向了，把head和head->next反向
+
+```c++
+class Solution {
+public:
+    ListNode* reverseList(ListNode* head) {
+        if (!head)
+            return nullptr;
+        if (!head->next)
+            return head;
+
+        ListNode* newhead=reverseList(head->next);
+        head->next->next=head;
+        head->next=nullptr;
+        return newhead;
+    }
+};
+```
+
+
+
+# 226
+
+翻转二叉树
+
+递归
+
+```c++
+class Solution {
+public:
+    TreeNode* invertTree(TreeNode* root) {
+        if (!root) return nullptr;
+        TreeNode* tmp=root->right;
+        root->right=invertTree(root->left);
+        root->left=invertTree(tmp);
+        return root;
+    }
+};
+```
+
+遍历
+
+```c++
+class Solution {
+public:
+    TreeNode* invertTree(TreeNode* root) {
+        if (!root) return nullptr;
+        queue<TreeNode*> que;
+        que.push(root);
+
+        while(!que.empty()){
+            TreeNode* p=que.front();
+            que.pop();
+            TreeNode* tmp=p->left;
+            p->left=p->right;
+            p->right=tmp;
+            if (p->left) 
+                que.push(p->left);
+            if (p->right) 
+                que.push(p->right);
+        }
+        return root;
+    }
+};
+```
+
+
+
+# 234
+
+回文链表
+
+先用快慢指针找中点，慢指针遍历的同时把前一半链表反转
+
+然后从中点向两端check
+
+```c++
+class Solution {
+public:
+    bool isPalindrome(ListNode* head) {
+        if (!head || !head->next)
+            return true;
+        ListNode* slow=head;
+        ListNode* slow_next=head->next;
+        ListNode* fast=head;
+        ListNode * tmp;
+
+        while(fast->next && fast->next->next){
+            fast=fast->next->next;
+            //反转slow和slow->next
+            tmp=slow_next->next;
+            slow_next->next=slow;
+            slow=slow_next;
+            slow_next=tmp;
+        }
+        if (!fast->next)
+            slow=slow->next;#节点数为奇数，跳过中点
+
+        head->next=nullptr;
+        while(slow_next){
+            if(slow->val!=slow_next->val)
+                return false;
+            slow=slow->next;
+            slow_next=slow_next->next;
+        }
+        
+        return true;
+    }
+};
+```
+
