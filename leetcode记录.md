@@ -2708,3 +2708,109 @@ public:
 };
 ```
 
+
+
+# 1052
+
+爱生气的书店老板
+
+先遍历一遍求初始值，再滑动窗口求最大
+
+```c++
+#include <algorithm>
+class Solution {
+public:
+    int maxSatisfied(vector<int>& customers, vector<int>& grumpy, int X) {
+        int n=customers.size();
+        int ans=0;
+
+        for(int i=0;i<n;i++){
+            if (!grumpy[i]){
+                ans+=customers[i];
+            }
+        }
+
+        int now=ans;
+        for(int i=0;i<X;i++){
+            if (grumpy[i]){
+                now+=customers[i];
+            }
+        }
+        ans=max(ans,now);
+
+        for(int i=X;i<n;i++){
+            if (grumpy[i]){
+                now+=customers[i];
+            }
+            if (grumpy[i-X]){
+                now-=customers[i-X];
+            }
+            ans=max(ans,now);
+        }
+        return ans;
+    }
+};
+```
+
+ # 832
+
+翻转图像
+
+每一行内检查中心对称的元素，如果一样，就要反转，否则不用变化
+
+如果一行的元素个数是奇数，中间的元素要单独反转
+
+```c++
+class Solution {
+public:
+    vector<vector<int>> flipAndInvertImage(vector<vector<int>>& A) {
+        int m=A.size();
+        int n=A[0].size();
+
+        for(int i=0;i<m;i++){
+            for(int j=0;j<n/2;j++){
+                if(A[i][j]==A[i][n-1-j]){
+                    A[i][j]=1-A[i][j];
+                    A[i][n-1-j]=A[i][j];
+                }
+            }
+            if (n%2){
+                A[i][(n-1)/2]=1-A[i][(n-1)/2];
+            }
+        }
+
+        return A;
+    }
+};
+```
+
+
+
+# 283
+
+移动零
+
+统计已经出现的零的个数，有几个零则非零元素就往前移动几位
+
+零全部放在最后即可
+
+```c++
+class Solution {
+public:
+    void moveZeroes(vector<int>& nums) {
+        int zero_num=0;
+        int n=nums.size();
+        for(int i=0;i<n;i++){
+            if(!nums[i]){
+                zero_num++;
+            }else{
+                nums[i-zero_num]=nums[i];
+            }
+        }
+        for(int i=0;i<zero_num;i++){
+            nums[n-1-i]=0;
+        }
+    }
+};
+```
+
