@@ -2814,3 +2814,176 @@ public:
 };
 ```
 
+
+
+ # 867
+
+转置矩阵
+
+easyyyyy
+
+```c++
+class Solution {
+public:
+    vector<vector<int>> transpose(vector<vector<int>>& matrix) {
+        int m=matrix.size();
+        int n=matrix[0].size();
+
+        vector<vector<int>> trans(n, vector<int>(m));
+        for(int i=0;i<n;i++){
+            for(int j=0;j<m;j++){
+                trans[i][j]=matrix[j][i];
+            }
+        }
+        return trans;
+    }
+};
+```
+
+
+
+# 461
+
+汉明距离
+
+方法一：把十进制转成二进制，每一位放在数组里
+
+```c++
+class Solution {
+public:
+    int hammingDistance(int x, int y) {
+        int x_bin[32]={0};
+        int y_bin[32]={0};
+        dec2bin(x,x_bin);
+        dec2bin(y,y_bin);
+
+        int hamming=0;
+        for (int i=0;i<32;i++){
+            if (x_bin[i]!=y_bin[i]){
+                hamming++;
+            }
+        }
+        return hamming;
+    }
+
+    void dec2bin(int x,int bin[]){
+        int i=31;
+
+        while(x>0){
+            bin[i]=x % 2;
+            x=x>>1;
+            i--;
+        }
+    }
+};
+```
+
+方法二：先xor，再算二进制1的个数
+
+```c++
+class Solution {
+public:
+    int hammingDistance(int x, int y) {
+        int xor_;
+        xor_=x xor y;
+        int hamming=0;
+
+        while(xor_>0){
+            hamming+=(xor_%2);
+            xor_=xor_>>1;
+        }
+
+        return hamming;
+    }
+};
+```
+
+方法三：布莱恩$\cdot$ 克尼根算法
+
+$x \& (x-1)$
+
+每做一次可以移除最右边的1
+
+减1之后，这个1变成0，右边的0全变成1，and一下这个1就没了
+
+![img](https://pic.leetcode-cn.com/Figures/461/461_brian.png)
+
+```c++
+class Solution {
+public:
+    int hammingDistance(int x, int y) {
+        int xor_=x xor y;
+        int hamming=0;
+
+        while(xor_){
+            hamming+=1;
+            xor_=xor_ & (xor_-1);
+        }
+
+        return hamming;
+    }
+};
+```
+
+
+
+# 543 
+
+二叉树的直径
+
+递归解法
+
+对于某个节点，经过其的最长路径就是左右子树的最大深度之和+1
+
+用递归求最大深度，顺便求最长路径
+
+直径就是最长路径-1
+
+```c++
+class Solution {
+public:
+    int ans=1;
+    int depth(TreeNode* root){
+        if (!root){
+            return 0;
+        }
+        int l=depth(root->left);
+        int r=depth(root->right);
+        ans=max(ans,l+r+1);
+        return max(l,r)+1;
+    }
+    int diameterOfBinaryTree(TreeNode* root) {
+        depth(root);
+        return ans-1;
+    }
+};
+```
+
+
+
+# 617
+
+合并二叉树
+
+递归，改结点值和指针
+
+```c++
+class Solution {
+public:
+    TreeNode* mergeTrees(TreeNode* root1, TreeNode* root2) {
+        if(!root1){
+            return root2;
+        }
+        if(!root2){
+            return root1;
+        }
+
+        root1->val+=root2->val;
+        root1->left=mergeTrees(root1->left,root2->left);
+        root1->right=mergeTrees(root1->right,root2->right);
+
+        return root1;
+    }
+};
+```
+
