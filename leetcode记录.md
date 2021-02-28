@@ -2987,3 +2987,273 @@ public:
 };
 ```
 
+
+
+# 1178
+
+猜字谜
+
+二进制状态压缩+匹配
+
+puzzle和word都用26位二进制来表示
+
+word包含puzzle的第一个字母，且word的所有字母都在puzzle中
+
+因此枚举puzzle后6位的每个子集，就得到每一个可能的word，再看word有没有出现
+
+```c++
+class Solution {
+public:
+    vector<int> findNumOfValidWords(vector<string>& words, vector<string>& puzzles) {
+        unordered_map<int,int> frequency;
+
+        //word转成二进制
+        for(int i=0;i<words.size();i++){
+            int mask=0;
+            for(int j=0;j<words[i].length();j++){
+                mask |= (1<<(words[i][j]-'a'));//对应位上为1
+            }
+            frequency[mask]++;
+        }
+
+        vector<int> ans;
+        for(int i=0;i<puzzles.size();i++){
+            int total=0;
+			
+            //枚举子集
+            for(int choose=0;choose<(1<<6);choose++){
+                int mask=1<<(puzzles[i][0]-'a');//第一个字母一定有
+                for(int j=0;j<6;j++){
+                    if(choose & (1<<j)){
+                        mask |= (1<<(puzzles[i][j+1]-'a'));
+                    }
+                }
+                total+=frequency[mask];
+            }
+            ans.push_back(total);
+        }
+        return ans;
+    }
+};
+```
+
+
+
+# 395
+
+至少有K个重复字符的最长字串
+
+方法一：分治
+
+如果存在某个字符ch，其出现次数大于0小于k，则任何包含ch的子串都不可能满足要求
+
+用ch将字符串切成若干段，满足要求的最长字串一定出现在某个被切分的段内，而不能跨越
+
+对于这些段用分治的方法进行递归
+
+时间复杂度：$O(N\cdot |\Sigma|)$ $N$为字符串长度， $\Sigma$ 为字符集大小，本题中为26。由于每次递归都会**完全去除**某个字符，因此递归深度最多为$|\Sigma|$ 
+
+空间复杂度：$O(|\Sigma|^2)$ 每次递归都需要$O(|\Sigma|)$的额外空间
+
+```c++
+class Solution {
+public:
+    int dfs(string s, int l, int r, int k){
+        //统计每个字符出现的次数
+        int count[26]={0};
+        for(int i=l;i<r;i++){
+            count[s[i]-'a']++;
+        }
+
+        //找一个ch
+        char spilt=0;
+        for(int i=0;i<26;i++){
+            if(count[i] && count[i]<k){
+                spilt=i+'a';
+            }
+        }
+        //没找到则说明这段字串满足要求
+        if(!spilt){
+            return r-l;
+        }
+
+        int i=l;
+        int ret=0;
+        while(i<r){
+            while(i<r && s[i]==spilt){
+                i++;
+            }
+            if (i>=r){
+                break;
+            }
+            int start=i;
+            while(i<r && s[i]!=spilt){
+                i++;
+            }
+            ret=max(ret,dfs(s,start,i,k));//递归
+        }
+        return ret;
+    }
+
+    int longestSubstring(string s, int k) {
+        return dfs(s,0,s.length(),k);
+    }
+};
+```
+
+方法二：滑动窗口
+
+枚举最长字串中的字符种类数目，最小为1，最大为$|\Sigma|$ 
+
+对于给定的字符种类数目t，维护滑动窗口，使其中字符种类数目tot不多于t
+
+然后判断滑动窗口是否满足要求：维护一个计数器less，代表当前出现次数小于k的字符的数量，无需遍历子串
+
+```c++
+class Solution {
+public:
+    int longestSubstring(string s, int k) {
+        int ret=0;
+        int n=s.length();
+        for (int t=1;t<=26;t++){
+            int l=0,r=0;
+            int count[26]={0};
+            int tot=0,less=0;
+
+            while(r<n){
+                //右边界右移
+                count[s[r]-'a']++;
+                if (count[s[r]-'a']==1){
+                    tot++;
+                    less++;
+                }
+                if (count[s[r]-'a']==k){
+                    less--;
+                }
+
+                while(tot>t){
+                    //左边界右移
+                    count[s[l]-'a']--;
+                    if(count[s[l]-'a']==k-1){
+                        less++;
+                    }
+                    if(!count[s[l]-'a']){
+                        tot--;
+                        less--;
+                    }
+                    l++;
+                }
+
+                if (!less){
+                    ret=max(ret,r-l+1);
+                }
+                r++;
+            }
+        }
+        return ret;
+    }
+};
+```
+
+
+
+# 896
+
+单调数列
+
+方法一：两次遍历，分别判断单调增和单调减
+
+```c++
+class Solution {
+public:
+    bool isMonotonic(vector<int>& A) {
+        bool flag=true;
+        for(int i=0;i<A.size()-1;i++){
+            if (A[i]>A[i+1]){
+                flag=false;
+                break;
+            }
+        }
+        if (flag) return true;
+        flag=true;
+        for(int i=0;i<A.size()-1;i++){
+            if (A[i]<A[i+1]){
+                flag=false;
+                break;
+            }
+        }
+        return flag;
+    }
+};
+```
+
+方法二：
+
+如果数列里同时有严格单调增和严格单调减，则不是单调数列
+
+```c++
+class Solution {
+public:
+    bool isMonotonic(vector<int>& A) {
+        bool inc=false,dec=false;
+        for(int i=0;i<A.size()-1;i++){
+            if (A[i]<A[i+1]){
+                inc=true;
+            }else if(A[i]>A[i+1]){
+                dec=true;
+            }
+            if (inc and dec){
+                return false;
+            }
+        }
+        return true;
+    }
+};
+```
+
+
+
+# 2
+
+两数相加
+
+可以认为长度较短的链表后面都是0
+
+如果最后有进位，还会多一个节点
+
+```c++
+class Solution {
+public:
+    ListNode* addTwoNumbers(ListNode* l1, ListNode* l2) {
+        ListNode *p1=l1,*p2=l2,*head=nullptr,*tail=nullptr;
+        int carry=0;
+        while(p1 || p2){
+            int val1=p1? p1->val:0;
+            int val2=p2? p2->val:0;
+            int sum=val1+val2+carry;
+            if(sum>=10){
+                carry=1;
+                sum=sum % 10;
+            }else{
+                carry=0;
+            }
+            if(!head){
+                head=tail=new ListNode(sum);
+            }else{
+                tail->next=new ListNode(sum);
+                tail=tail->next;
+            }
+            if(p1)
+                p1=p1->next;
+            if(p2)
+                p2=p2->next;
+        }
+        
+        if(carry){
+            tail->next=new ListNode(1);
+        }
+        return head;
+    }
+};
+```
+
