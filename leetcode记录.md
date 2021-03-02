@@ -3257,3 +3257,98 @@ public:
 };
 ```
 
+
+
+# 303
+
+区域和检索
+
+前缀和，dp[i]是0~i-1元素的和
+
+```c++
+class NumArray {
+private:
+    int* dp;
+public:
+    NumArray(vector<int>& nums) {
+        int n=nums.size();
+        dp=new int[n+1];
+
+        dp[0]=0;
+        for(int i=1;i<=n;i++){
+            dp[i]=dp[i-1]+nums[i-1];
+        }
+    }
+    
+    int sumRange(int i, int j) {
+        return dp[j+1]-dp[i];
+    }
+};
+```
+
+
+
+# 3
+
+无重复字符的最长字串
+
+滑动窗口，由于任何字符都能出现在字符串中，可以用ascii码
+
+```c++
+class Solution {
+public:
+    int lengthOfLongestSubstring(string s) {
+        bool freq[128]={0};
+        int left=0,right=0;
+        int ans=0;
+
+        while(right<s.length()){
+            if(freq[s[right]]){
+                ans=max(ans,right-left);
+                while(s[left]!=s[right]){
+                    freq[s[left]]=false;
+                    left++;
+                }
+                left++;
+            }
+            freq[s[right]]=true;
+            right++;
+        }
+        ans=max(ans,right-left);
+        return ans;
+    }
+};
+```
+
+
+
+# 304
+
+二维区域和检索-矩阵不可变
+
+二维前缀和
+
+```c++
+class NumMatrix {
+private:
+    vector<vector<int>> dp;
+public:
+    NumMatrix(vector<vector<int>>& matrix) {
+        int m=matrix.size();
+        if(!m) return;
+        int n=matrix[0].size();
+
+        dp.resize(m+1,vector<int>(n+1));
+        for(int i=0;i<m;i++){
+            for(int j=0;j<n;j++){
+                dp[i+1][j+1]=dp[i+1][j]+dp[i][j+1]-dp[i][j]+matrix[i][j];
+            }
+        }
+    }
+    
+    int sumRegion(int row1, int col1, int row2, int col2) {
+        return dp[row2+1][col2+1]+dp[row1][col1]-dp[row1][col2+1]-dp[row2+1][col1];
+    }
+};
+```
+
