@@ -3352,3 +3352,887 @@ public:
 };
 ```
 
+
+
+# 338
+
+比特位计数
+
+方法一：去掉最高位的1
+
+用```now_max```保存现在最大的2的倍数，其只有一个1，可以用```i&(i-1)```是否为0来判断
+
+对于其它的数，只比```i-now_max```多最高位的1
+
+```c++
+class Solution {
+public:
+    vector<int> countBits(int num) {
+        vector<int> ans(num+1);
+        
+        int now_max=0;
+        for(int i=1;i<=num;i++){
+            if((i&(i-1))==0){
+                now_max=i;
+                ans[i]=1;
+            }else{
+                ans[i]=ans[i-now_max]+1;
+            }
+        }
+        return ans;
+    }
+};
+```
+
+方法二：去掉最右边的1
+
+```i&(i-1)```可以把```i```最右边的1去掉
+
+```c++
+class Solution {
+public:
+    vector<int> countBits(int num) {
+        vector<int> ans(num+1);
+        
+        for(int i=1;i<=num;i++){
+            ans[i]=ans[i&(i-1)]+1;
+        }
+        return ans;
+    }
+};
+```
+
+
+
+# 5
+
+最长回文子串
+
+方法一：dp
+
+从长度为1的子串开始dp：长度为1肯定是回文，长度为2就看两个字符相不相等
+
+[i,j]的子串就看[i+1,j-1]和两端的字符
+
+```c++
+class Solution {
+public:
+    string longestPalindrome(string s) {
+        int n=s.length();
+        bool dp[n][n];
+
+        string ans="";
+        for(int l=0;l<n;l++){
+            for(int i=0;i+l<n;i++){
+                if(!l){
+                    dp[i][i]=true;
+                }else if(l==1){
+                    dp[i][i+1]=(s[i]==s[i+1]);
+                }else{
+                    dp[i][i+l]=dp[i+1][i+l-1] && (s[i]==s[i+l]);
+                }
+                if(dp[i][i+l] && l+1>ans.length()){
+                    ans=s.substr(i,l+1);
+                }
+            }
+        }
+        return ans;
+    }
+};
+```
+
+方法二：中心拓展
+
+dp的边界情况就是长度为1或2的子串，所以从这些中心出发，向两侧拓展
+
+```c++
+class Solution {
+public:
+    string longestPalindrome(string s) {
+        int start=0,end=0;
+        for(int i=0;i<s.length();i++){
+            int len=max(CenterExpand(s,i,i),CenterExpand(s,i,i+1));
+            if(len>end-start+1){
+                start=i-(len-1)/2;//len要减1，否则长度为偶数时会多一个
+                end=i+len/2;
+            }
+        }
+        return s.substr(start,end-start+1);
+    }
+
+    int CenterExpand(string s, int left, int right){
+        while(left>=0 && right<=s.length() && s[left]==s[right]){
+            left--;
+            right++;
+        }
+        return right-left-1;//不包括right和left
+    }
+};
+```
+
+
+
+# 11
+
+盛最多水的容器
+
+双指针：从两边向中间移动
+
+当前的容量=两个指针指向数字的较小值*指针之间的距离
+
+每次移动时，应该移动指向数字较小的那个，这样前者才会增大
+
+```c++
+class Solution {
+public:
+    int maxArea(vector<int>& height) {
+        int ans=0;
+        int left=0;
+        int right=height.size()-1;
+
+        while(left<right){
+            int area=(right-left)*min(height[left],height[right]);
+            ans=max(ans,area);
+            if(height[left]<height[right]){
+                left++;
+            }else{
+                right--;
+            }
+        }
+        return ans;
+    }
+};
+```
+
+
+
+# 354
+
+俄罗斯套娃信封问题
+
+先在宽度上进行升序排序，然后根据高度选一个最长严格递增子序列
+
+对于宽度一样的情况，按照高度降序排序，以保证不会出现同样宽度套娃的情况
+
+计算最长严格递增子序列：
+
+方法一：动态规划
+
+对于第i个元素，找能排在其前面的元素j，```f[i]=max(f[i],f[j]+1)```
+
+如果找不到j，就是i本身
+
+```max_element```返回数组里最大的元素的迭代器（指针）
+
+```c++
+class Solution {
+public:
+    int maxEnvelopes(vector<vector<int>>& envelopes) {
+        int n=envelopes.size();
+        
+        sort(envelopes.begin(),envelopes.end(),compare);
+        vector<int> f(n,1);
+
+        for(int i=0;i<n;i++){
+            for (int j=0;j<i;j++){
+                if(envelopes[j][1]<envelopes[i][1]){
+                    f[i]=max(f[i],f[j]+1);
+                }
+            }
+        }
+        return *max_element(f.begin(),f.end());
+
+    }
+
+    static bool compare(vector<int> &e1, vector<int> &e2){
+        return e1[0]<e2[0] || (e1[0]==e2[0] && e1[1]>e2[1]);
+    }
+};
+```
+
+方法二：二分查找
+
+f[j]维护当前可以组成的长度为j的严格递增子序列的末尾元素的最小值，f肯定是严格单增的
+
+对于下一个元素i：
+
+如果i比f的最后一个值f[j]大，则i可以接在后面，形成长度为j+1的子序列；
+
+否则找出比i严格小的最大元素，把i接在其后，因为i肯定比原来这个位置上的元素要小，更有可能找到更长的子序列
+
+```lower_bound```可以找到数组里大于等于```num```的最小下标（前提是数组是升序的）
+
+```
+class Solution {
+public:
+    int maxEnvelopes(vector<vector<int>>& envelopes) {
+        int n=envelopes.size();
+        
+        sort(envelopes.begin(),envelopes.end(),compare);
+        vector<int> f={envelopes[0][1]};
+
+        for(int i=1;i<n;i++){
+            int num=envelopes[i][1];
+            if(num>f.back()){
+                f.push_back(num);
+            }else{
+                auto it=lower_bound(f.begin(),f.end(),num);
+                *it=num;
+            }
+        }
+        return f.size();
+    }
+
+    static bool compare(vector<int> &e1, vector<int> &e2){
+        return e1[0]<e2[0] || (e1[0]==e2[0] && e1[1]>e2[1]);
+    }
+};
+```
+
+
+
+# 232
+
+用栈实现队列
+
+用一个输入栈一个输出栈，每次要取队列头元素的时候，先看输出栈里有没有，没有就把输入栈的先pop出来，再push进输出栈，这样顺序就是FIFO的
+
+```c++
+class MyQueue {
+private:
+    stack<int> in_stack;
+    stack<int> out_stack;
+public:
+    /** Initialize your data structure here. */
+    MyQueue() {
+
+    }
+    
+    /** Push element x to the back of queue. */
+    void push(int x) {
+        in_stack.push(x);
+    }
+    
+    /** Removes the element from in front of queue and returns that element. */
+    int pop() {
+        int r;
+        if(!out_stack.empty()){
+            r=out_stack.top();
+            out_stack.pop();
+        }else{
+            while(in_stack.size()!=1){
+                out_stack.push(in_stack.top());
+                in_stack.pop();
+            }
+            r=in_stack.top();
+            in_stack.pop();
+        }
+        return r;
+    }
+    
+    /** Get the front element. */
+    int peek() {
+        int r;
+        if(!out_stack.empty()){
+            r=out_stack.top();
+        }else{
+            while(in_stack.size()){
+                out_stack.push(in_stack.top());
+                in_stack.pop();
+            }
+            r=out_stack.top();
+        }
+        return r;
+    }
+    
+    /** Returns whether the queue is empty. */
+    bool empty() {
+        return in_stack.empty() && out_stack.empty();
+    }
+};
+```
+
+
+
+# 503
+
+下一个更大元素II
+
+单调栈（单调递减），保存下标
+
+移动到位置$i$时，就将栈中所有对应值小于nums[i]的下标弹出，因为这些值的下一个更大元素就是nums[i]
+
+由于是循环队列，需要再遍历回来，即把前n-1个元素拼接在原数组后面
+
+实现时不用显式地拼接，对下标取模即可
+
+```c++
+class Solution {
+public:
+    vector<int> nextGreaterElements(vector<int>& nums) {
+        int n=nums.size();
+        vector<int> ans(n,-1);
+        stack<int> s;
+
+        for(int i=0;i<2*n-1;i++){
+            while(!s.empty() && nums[s.top()]<nums[i%n]){
+                ans[s.top()%n]=nums[i%n];
+                s.pop();
+            }
+            s.push(i%n);
+        }
+        return ans;
+    }
+};
+```
+
+
+
+# 15
+
+三数之和
+
+排序+双指针
+
+为了避免有重复的，先对数组进行排序，然后保证三元组是$a\le b\le c$
+
+在每一轮循环内，相邻两次枚举的元素不能相同
+
+固定了前两重循环的元素后，第三个元素可以从后往前找，这样第二重和第三重循环可以简化成双指针
+
+时间复杂度为$O(N^2)$
+
+```c++
+class Solution {
+public:
+    vector<vector<int>> threeSum(vector<int>& nums) {
+        sort(nums.begin(),nums.end());
+        int n=nums.size();
+        vector<vector<int>> ans;
+
+        for(int i=0;i<n;i++){//第一个元素
+            if (!i || nums[i]!=nums[i-1]){//不重复枚举
+                int k=n-1;//第三个元素
+                int target=-nums[i];
+                for(int j=i+1;j<n;j++){//第二个元素
+                    if (j==i+1 || nums[j]!=nums[j-1]){//不重复枚举
+                        while(j<k && nums[j]+nums[k]>target){//双指针移动
+                            k--;
+                        }
+                        if(j>=k){//第二个元素要小于第三个元素
+                            break;
+                        }
+                        if(nums[j]+nums[k]==target){
+                            ans.push_back({nums[i],nums[j],nums[k]});
+                        }
+                    }
+                }
+            }
+        }
+        return ans;
+    }
+};
+```
+
+
+
+# 131
+
+分割回文串
+
+方法一：顺序遍历尝试划分，先找到一个回文串，然后递归分割剩余的字符串
+
+非常慢且空间占用多
+
+```c++
+class Solution {
+public:
+    vector<vector<string>> partition(string s) {
+        vector<vector<string>> ans;
+        if(s.length()==1){
+            vector<string> tmp;
+            tmp.push_back(s);
+            ans.push_back(tmp);
+            return ans;
+        }
+
+        for (int i=0;i<s.length();i++){
+            if(!i || check(s.substr(0,i+1))){//找到回文串
+                if(i+1!=s.length()){
+                    vector<vector<string>> ret=partition(s.substr(i+1));//递归划分剩余的
+                    for(int j=0;j<ret.size();j++){
+                        ret[j].insert(ret[j].begin(),s.substr(0,i+1));//后面划分好的，加上前面的
+                    }
+                    ans.insert(ans.end(),ret.begin(),ret.end());
+                }else{//整个串都是回文
+                    vector<string> tmp;
+                    tmp.push_back(s);
+                    ans.push_back(tmp);
+                }
+            }
+        }
+        return ans;
+    }
+
+    bool check(string s){//检查是不是回文
+        int n=s.length();
+        for(int i=0;i<n/2;i++){
+            if(s[i]!=s[n-1-i]){
+                return false;
+            }
+        }
+        return true;
+    }
+};
+```
+
+方法二：回溯+dp
+
+用dp来判断所有子串是否为回文，i>=j的dp\[i][j]都是true，这样可以不用管单个字符，也不用管字符长度够不够dp\[j+1][j+i-1]
+
+然后用dfs来分割
+
+时间复杂度：$O(n\cdot2^n)$ ，n为字符串的长度。最坏情况下，字符串包含n个相同的字符，划分方案数为$2^{n-1}=O(2^n)$，每一种划分需要$O(n)$的时间。dp所需的时间是$O(n^2)$，比$O(n\cdot2^n)$小，可以忽略。
+
+空间复杂度：$O(n^2)$，不考虑答案所需要的空间，dp所需的空间为$O(n^2)$，回溯中需要$O(n)$的空间
+
+```c++
+class Solution {
+private:
+    int n;
+    vector<string> ans;
+    vector<vector<string>> ret;
+    vector<vector<bool>> dp;
+public:
+    vector<vector<string>> partition(string s) {
+        n=s.length();
+        dp.resize(n,vector<bool>(n,true));
+
+        for(int i=1;i<n;i++){
+            for(int j=0;j+i<n;j++){
+                dp[j][j+i]=(s[j]==s[j+i]) && dp[j+1][j+i-1];
+            }
+        }
+
+        dfs(s,0);
+        
+        return ret;
+    }
+
+    void dfs(string &s,int i){
+        if(i==n){
+            ret.push_back(ans);//找到一个分割
+            return;
+        }
+
+        for(int j=i;j<n;j++){
+            if(dp[i][j]){
+                ans.push_back(s.substr(i,j-i+1));
+                dfs(s,j+1);
+                ans.pop_back();//回溯
+            }
+        }
+    }
+};
+```
+
+
+
+# 17
+
+电话号码的字母组合
+
+dfs回溯
+
+```c++
+class Solution {
+private:
+    int n;
+    vector<string> ans;
+    string t="";
+
+public:
+    vector<string> letterCombinations(string digits) {
+        n=digits.size();
+        if(!n){
+            return ans;
+        }
+
+        dfs(digits,0);
+        return ans;
+    }
+
+    void dfs(const string &s, int i){
+        if(i==n){
+            ans.push_back(t);
+            return;
+        }
+        if(s[i]<'7'){
+            for(int j=0;j<3;j++){
+                char c=3*(s[i]-'1')-3+j+'a';
+                t+=c;
+                dfs(s,i+1);
+                t=t.substr(0,i);
+            }
+        }else if(s[i]=='7'){
+            for(char c='p';c<='s';c++){
+                t+=c;
+                dfs(s,i+1);
+                t=t.substr(0,i);
+            }
+        }else if(s[i]=='8'){
+            for(char c='t';c<='v';c++){
+                t+=c;
+                dfs(s,i+1);
+                t=t.substr(0,i);
+            }
+        }else{
+            for(char c='w';c<='z';c++){
+                t+=c;
+                dfs(s,i+1);
+                t=t.substr(0,i);
+            }
+        }
+    }
+};
+```
+
+优化：用哈希表把数字和字母的对应关系存下来，代码简单一些
+
+and String支持线性表的操作
+
+```c++
+class Solution {
+private:
+    int n;
+    vector<string> ans;
+    string t="";
+    unordered_map<char,string> num2char{
+            {'2', "abc"},
+            {'3', "def"},
+            {'4', "ghi"},
+            {'5', "jkl"},
+            {'6', "mno"},
+            {'7', "pqrs"},
+            {'8', "tuv"},
+            {'9', "wxyz"}
+        };
+
+public:
+    vector<string> letterCombinations(string digits) {
+        n=digits.size();
+        if(!n){
+            return ans;
+        }
+
+        dfs(digits,0);
+        return ans;
+    }
+
+    void dfs(const string &s, int i){
+        if(i==n){
+            ans.push_back(t);
+            return;
+        }
+        const string &m=num2char[s[i]];
+        for(int j=0;j<m.length();j++){
+            t.push_back(m[j]);
+            dfs(s,i+1);
+            t.pop_back();
+        }
+    }
+};
+```
+
+
+
+# 132
+
+分割回文串II
+
+dp：设$f[i]$表示$s[0\dots i]$的最少分割次数，可以枚举分割出的最后一个回文串
+
+$$f[i]=\min_{0\le j\le i}\{f[j]\}+1$$，其中$s[j+1\dots i]$是回文串
+
+还要考虑$s[0\dots i]$本身是回文串的情况，即$f[i]=0$
+
+判断回文串可以用**131**中预处理方法
+
+```c++
+class Solution {
+public:
+    int minCut(string s) {
+        int n=s.length();
+        vector<vector<bool>> dp(n,vector<bool>(n,true));
+
+        for(int i=1;i<n;i++){
+            for(int j=0;j+i<n;j++){
+                dp[j][j+i]=(s[j]==s[j+i]) && dp[j+1][j+i-1];
+            }
+        }
+
+        vector<int> div(n);
+
+        for(int i=0;i<n;i++){
+            if(dp[0][i]){
+                div[i]=0;
+            }else{
+                int t=i;
+                for(int j=1;j<=i;j++){
+                    if(dp[j][i]){
+                        t=min(t,div[j-1]);
+                    }
+                }
+                div[i]=t+1;
+            }
+        } 
+        return div[n-1];
+    }
+};
+```
+
+
+
+# 19
+
+删除链表的倒数第N个节点
+
+方法一：计算链表长度，需要两次遍历
+
+方法二：栈，用栈把所有节点存进去，然后弹出的第n个就是要删除的，栈顶元素就是其前驱节点
+
+方法三：双指针
+
+用快慢两个指针遍历链表，快指针比慢指针超前n个节点，当快指针到达链表末尾时，慢指针就位于倒数第n个节点
+
+找被删除节点的前驱节点对删除操作更加方便，因此在头节点前增加一个哑节点，让慢指针从哑节点开始
+
+最终慢指针的下一个节点就是要被删除的节点
+
+```c++
+class Solution {
+public:
+    ListNode* removeNthFromEnd(ListNode* head, int n) {
+        ListNode* prev=new ListNode(0,head);
+        ListNode* slow=prev;
+        ListNode* fast=head;
+
+        for(int i=0;i<n;i++){
+            fast=fast->next;
+        }
+
+        while(fast){
+            fast=fast->next;
+            slow=slow->next;
+        }
+        ListNode* tmp=slow->next;
+        slow->next=tmp->next;
+        delete tmp;
+
+        return prev->next;
+    }
+};
+```
+
+
+
+# 1047
+
+删除字符串中的所有相邻重复项
+
+方法一：傻瓜方法
+
+双指针找相邻的两个字符
+
+用```del```表示字符有没有被删掉
+
+如果一次遍历中有删掉的，就再遍历一次
+
+```c++
+class Solution {
+public:
+    string removeDuplicates(string S) {
+        int n=S.length();
+        vector<bool> del(n,false);
+
+        bool flag;
+        do{
+            flag=false;
+            int i=0,j=0;
+            while(i<n-1){
+                while(del[i]) i++;//找没被删掉的i
+                j=i+1;
+                while(del[j]) j++;//找没被删掉的j
+
+                if(S[i]==S[j]){
+                    del[i]=del[j]=true;
+                    flag=true;
+                    i=j+1;//i移动到j下一个
+                }else{
+                    i=j;//i移动到j
+                }
+            }
+        }while(flag);
+
+        string ans;
+        for(int i=0;i<n;i++){
+            if(!del[i]){
+                ans+=S[i];
+            }
+        }
+        return ans;
+    }
+};
+```
+
+高级方法：用栈
+
+每来一个元素，就跟栈顶元素比较，如果一样，就把栈顶元素pop出来，否则入栈
+
+```c++
+class Solution {
+public:
+    string removeDuplicates(string S) {
+        string ans;
+
+        for(int i=0;i<S.length();i++){
+            if(ans.empty() || ans.back()!=S[i]){
+                ans.push_back(S[i]);
+            }else{
+                ans.pop_back();
+            }
+        }
+        return ans;
+    }
+};
+```
+
+
+
+# 1766
+
+互质树
+
+超时方法：dfs遍历+模拟
+
+```c++
+class Solution {
+private:
+    vector<vector<int>> prime;
+public:
+    vector<int> getCoprimes(vector<int>& nums, vector<vector<int>>& edges) {
+        int n = nums.size();
+        vector<bool> visited(n-1, false);
+        prime.resize(51, vector<int>(51, 0));
+
+        vector<int> ans(n, -1);
+        vector<int> q;
+
+        q.push_back(0);
+
+        while (!q.empty()) {
+            int node = q.back();
+
+            for (int i = q.size() - 2; i >= 0; i--) {
+                if (gcd(nums[q[i]], nums[node])) {
+                    ans[node] = q[i];
+                    break;
+                }
+            }
+
+            int child=-1;
+            for (int i = 0; i < n-1; i++) {
+                if (visited[i]) {
+                    continue;
+                }
+                if (edges[i][0] == node) {
+                    child = edges[i][1];
+                }
+                if (edges[i][1] == node) {
+                    child = edges[i][0];
+                }
+                if(child!=-1){
+                    visited[i]=true;
+                    break;
+                }
+            }
+
+            if (child != -1) {
+                q.push_back(child);
+            }else{
+                q.pop_back();
+            }
+        }
+
+        return ans;
+    }
+
+    bool gcd(int a, int b) {
+        if (a < b) {
+            swap(a, b);
+        }
+        if (prime[a][b]) {
+            return prime[a][b] == 1;
+        }
+        if (a % 2 == 0 && b % 2 == 0) {
+            prime[a][b] = -1;
+        } else {
+            int a1=a,b1=b;
+            int r;
+            while (a1 % b1) {
+                r = a1 % b1;
+                a1 = b1;
+                b1 = r;
+            }
+            prime[a][b] = (b1 > 1 ? -1 : 1);
+        }
+        return prime[a][b] == 1;
+    }
+};
+```
+
+好方法：栈+节点值
+
+如果蛮力检查一个节点的祖先节点，一个节点的祖先节点最多会有n-1个，因此会超时
+
+换一种思路，因为$nums[i]\le 50$，可以从节点值出发，枚举与节点值互素的数，并对每个数找出离节点最近的点
+
+对于任一数字，找最近的祖先节点：dfs，1-50每一个值维护一个栈，然后把节点放到值对应的栈里，并用节点的深度来判断距离
+
+```c++
+class Solution {
+public:
+    vector<vector<int>> G;
+    stack<pair<int,int>> lasts[51];
+    vector<int> ans;
+    void dfs(int node, int pre, int level, vector<int>& nums) {
+        int fa = -1, depth = -1;
+        for(int i = 1; i <= 50; ++i) {
+            if(lasts[i].size() && lasts[i].top().first > depth && __gcd(i, nums[node]) == 1) {
+                fa = lasts[i].top().second;
+                depth = lasts[i].top().first;
+            }
+        }
+        ans[node] = fa;
+        for(int ne : G[node]) {
+            if(ne != pre) {
+                lasts[nums[node]].push({level, node});
+                dfs(ne, node, level + 1, nums);
+                lasts[nums[node]].pop();
+            }
+        }
+    }
+    vector<int> getCoprimes(vector<int>& nums, vector<vector<int>>& edges) {
+        int n = nums.size();
+        G.resize(n);//构造邻接矩阵
+        for(auto& e : edges) {
+            G[e[0]].push_back(e[1]);
+            G[e[1]].push_back(e[0]);
+        }
+        ans.resize(n);
+        dfs(0, -1, 0, nums);
+        return ans;
+    }
+};
+```
+
