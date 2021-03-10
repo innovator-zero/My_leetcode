@@ -4236,3 +4236,172 @@ public:
 };
 ```
 
+
+
+# 224
+
+基本计算器
+
+方法一：经典符号栈
+
+0：+，1：-，2：（
+
+```c++
+class Solution {
+public:
+    stack<int> dataStack;
+    stack<int> opStack;
+    int calculate(string s) {
+        int prev=0;
+
+        for(int i=0;i<s.length();i++){
+            char ch=s[i];
+            switch(ch){
+                case ' ':
+                    continue;
+                case '+':case '-':
+                    while(!opStack.empty() && opStack.top()!=2){
+                        OP(opStack.top());//左括号前的都可以计算
+                        opStack.pop();
+                    }
+                    //新符号进栈
+                    if(ch=='+'){
+                        opStack.push(0);
+                    }else{
+                        opStack.push(1);
+                    }
+                    break;
+                case '(':
+                    opStack.push(2);//左括号进栈
+                    break;
+                case ')':
+                    while(!opStack.empty() && opStack.top()!=2){//左右括号里的都可以计算
+                        OP(opStack.top());
+                        opStack.pop();
+                    }
+					opStack.pop();//左括号出栈
+                    break;
+                default:
+                    int num=ch-'0';
+                    prev=prev*10+num;//连续数字的计算
+                    if(s[i+1]<'0' || s[i+1]>'9'){
+                        dataStack.push(prev);//数字结束了
+                        prev=0;//重置
+                    }
+                    
+            }
+        }
+
+        while(!opStack.empty()){
+            OP(opStack.top());
+            opStack.pop();
+        }
+        return dataStack.top();
+    }
+
+    void OP(int op){//计算表达式
+        int num1=0,num2;
+
+        num2=dataStack.top();
+        dataStack.pop();
+
+        if(!dataStack.empty()){//有负数的情况，可以看作0-num2
+            num1=dataStack.top();
+        dataStack.pop();
+        }
+        
+        if(!op){
+            dataStack.push(num1+num2);
+        }else{
+            dataStack.push(num1-num2);
+        }
+    }
+};
+```
+
+方法二：括号展开+栈
+
+因为只有加法和减法两种运算符，可以将表达式中的括号展开
+
+如果遇到左括号，就把括号前的符号用栈记录下来，+1表示+，-1表示-
+
+对于括号内的符号，如果括号前（栈顶）的符号是-，那么当前符号就要翻转
+
+```c++
+class Solution {
+public:
+    int calculate(string s) {
+        int prev=0,ans=0;
+        stack<int> opStack;
+        int sign=1;
+        opStack.push(1);//可以看作整个表达式括号括起来，外面是+号
+
+        for(int i=0;i<s.length();i++){
+            char ch=s[i];
+            switch(ch){
+                case ' ':
+                    continue;
+                case '+':
+                    sign=opStack.top();
+                    break;
+                case '-':
+                    sign=-opStack.top();
+                    break;
+                case '(':
+                    opStack.push(sign);
+                    break;
+                case ')':
+                    opStack.pop();
+                    break;
+                default:
+                    int num=ch-'0';
+                    prev=prev*10+num;
+                    if(s[i+1]<'0' || s[i+1]>'9'){
+                        ans+=sign*prev;//数字结束，将值加到结果中
+                        prev=0;
+                    }
+            }
+        }
+        return ans;
+    }
+};
+```
+
+
+
+# 22
+
+括号生成
+
+dfs回溯，left和right分别表示剩余的左右括号数量
+
+```c++
+class Solution {
+public:
+    vector<string> ans;
+    string s; 
+    vector<string> generateParenthesis(int n) {
+        s.push_back('(');
+        dfs(n-1,n);
+
+        return ans;
+    }
+    void dfs(int left,int right){
+        if(!left && !right){
+            ans.push_back(s);
+            return;
+        }
+        if(left>0){//可以加一个左括号
+            s.push_back('(');
+            dfs(left-1,right);
+            s.pop_back();
+        }
+        if(right>0 && left<right){//可以加一个右括号
+            s.push_back(')');
+            dfs(left,right-1);
+            s.pop_back();
+        }
+    }
+};
+```
+
