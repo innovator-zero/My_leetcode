@@ -2386,7 +2386,7 @@ K连续位的最小翻转次数
 
 关键：某一位置的元素值，跟其前面K-1个元素翻转的次数相关
 
-滑动窗口：前K-1个元素中，哪些位置起始的子区间进行了翻转
+滑动窗口：前K-1个元素中，哪些位置起始的子区 间进行了翻转
 
 滑动窗口的元素个数就是当前位置已经被翻转的次数
 
@@ -4401,6 +4401,793 @@ public:
             dfs(left,right-1);
             s.pop_back();
         }
+    }
+};
+```
+
+
+
+# 227
+
+基本计算器II
+
+方法一：符号栈
+
+0：+，1：-，2：（，3：*，4：/
+
+```c++
+class Solution {
+public:
+    stack<int> dataStack;
+    stack<int> opStack;
+    int calculate(string s) {
+        int prev=0;
+
+        for(int i=0;i<s.length();i++){
+            char ch=s[i];
+            switch(ch){
+                case ' ':
+                    continue;
+                case '+':case '-':
+                    while(!opStack.empty() && opStack.top()!=2){
+                        OP(opStack.top());//左括号前的都可以计算
+                        opStack.pop();
+                    }
+                    //新符号进栈
+                    if(ch=='+'){
+                        opStack.push(0);
+                    }else{
+                        opStack.push(1);
+                    }
+                    break;
+                case '*':case '/':
+                    while(!opStack.empty() && opStack.top()>=3){
+                        OP(opStack.top());
+                        opStack.pop();
+                    }
+                    if(ch=='*'){
+                        opStack.push(3);
+                    }else{
+                        opStack.push(4);
+                    }
+                    break;
+                case '(':
+                    opStack.push(2);//左括号进栈
+                    break;
+                case ')':
+                    while(!opStack.empty() && opStack.top()!=2){//左右括号里的都可以计算
+                        OP(opStack.top());
+                        opStack.pop();
+                    }
+					opStack.pop();//左括号出栈
+                    break;
+                default:
+                    int num=ch-'0';
+                    prev=prev*10+num;//连续数字的计算
+                    if(s[i+1]<'0' || s[i+1]>'9'){
+                        dataStack.push(prev);//数字结束了
+                        prev=0;//重置
+                    }
+                    
+            }
+        }
+
+        while(!opStack.empty()){
+            OP(opStack.top());
+            opStack.pop();
+        }
+        return dataStack.top();
+    }
+
+    void OP(int op){//计算表达式
+        int num1=0,num2;
+
+        num2=dataStack.top();
+        dataStack.pop();
+
+        if(!dataStack.empty()){//有负数的情况，可以看作0-num2
+            num1=dataStack.top();
+        dataStack.pop();
+        }
+        
+        switch(op){
+            case 0:
+                dataStack.push(num1+num2);break;
+            case 1:
+                dataStack.push(num1-num2);break;
+            case 3:
+                dataStack.push(num1*num2);break;
+            case 4:
+                dataStack.push(num1/num2);
+        }
+    }
+};
+```
+
+方法二：因为没有括号，所以可以即时算出乘除的结果
+
+当扫描到符号或结尾时，根据上一个符号，将新的数字入栈或把栈顶数字乘除新的数字
+
+除了最后的空格，其它都无视
+
+最后把栈里的数字求和
+
+````c++
+class Solution {
+public:
+    int calculate(string s) {
+        vector<int> stack;
+        char presign='+';
+
+        int prev=0;
+        for(int i=0;i<s.length();i++){
+            char ch=s[i];
+            if(ch>='0' && ch<='9'){
+                int num=ch-'0';
+                prev=prev*10+num;
+            }
+
+            if(((ch<'0' || ch>'9') && ch!=' ') || i==s.length()-1){
+                switch(presign){
+                    case '+':
+                        stack.push_back(prev);
+                        break;
+                    case '-':
+                        stack.push_back(-prev);
+                        break;
+                    case '*':
+                        stack.back()*=prev;
+                        break;
+                    case '/':
+                        stack.back()/=prev;            
+                }
+                presign=ch;
+                prev=0;
+            }
+        }
+        return accumulate(stack.begin(),stack.end(),0);
+    }
+};
+````
+
+
+
+# 31
+
+下一个排列
+
+C++标准库函数写法
+
+原理：
+
+我们需要将一个左边的「较小数」与一个右边的「较大数」交换，以能够让当前排列变大，从而得到下一个排列
+
+同时我们要让这个「较小数」尽量靠右，而「较大数」尽可能小。当交换完成后，「较大数」右边的数需要按照升序重新排列。这样可以在保证新排列大于原来排列的情况下，使变大的幅度尽可能小
+
+做法：
+
+首先从后向前查找第一个顺序对 (i,i+1)，满足 $a[i] < a[i+1]$。这样「较小数」即为 $a[i]$。此时 $[i+1,n)$必然是下降序列
+
+如果找到了顺序对，那么在区间$[i+1,n)$中从后向前查找第一个元素 j满足 $a[i] < a[j]$。这样「较大数」即为 $a[j]$
+
+交换 $a[i]$ 与 $a[j]$，此时可以证明区间 $[i+1,n)$ 必为降序。我们可以直接使用双指针反转区间 $[i+1,n)$ 使其变为升序，而无需对该区间进行排序
+
+如果较小数不存在，则说明整个排列是降序的，直接反转即可
+
+```c++
+class Solution {
+public:
+    void nextPermutation(vector<int>& nums) {
+        int n=nums.size();
+        int i=n-2,j;
+        while(i>=0 && nums[i]>=nums[i+1]) i--;//找较小数
+
+        if(i>=0){//较小数存在
+            j=n-1;
+            while(nums[i]>=nums[j]) j--;//找较大数
+            swap(nums[i],nums[j]);
+        }
+
+        //反转
+        i++;
+        j=n-1;
+        while(i<j){
+            swap(nums[i],nums[j]);
+            i++;
+            j--;
+        }
+        //reverse(nums.begin()+i+1,nums.end());
+    }
+};
+```
+
+
+
+# 331
+
+验证二叉树的前序序列化
+
+对于一个正确的二叉树，入度之和等于出度之和
+
+空节点：0个出度，1个入度
+
+非空节点：2个出度，1个入度
+
+遍历到任意节点时，出度应该大于等于入度，原因是还没遍历到该节点的子节点
+
+遍历完成后，整棵树的出度应该等于入度
+
+diff=出度-入度，初始化为1的原因是根节点虽然是非空节点，但其入度为0，抵消其减去的1个入度
+
+```c++
+class Solution {
+public:
+    bool isValidSerialization(string preorder) {
+        int diff=1;
+        int i=0;
+        while(i<preorder.length()){
+            if(preorder[i]!=','){
+                while(i<preorder.length()-1 && preorder[i+1]!=','){
+                    i++;
+                }
+                diff-=1;
+                if(diff<0){
+                    return false;
+                }
+                if(preorder[i]!='#'){
+                    diff+=2;
+                }
+            }
+            i++;
+        }
+        return diff==0;
+    }
+};
+```
+
+
+
+# 705
+
+设计哈希集合
+
+哈希表：开散链表的实现
+
+```c++
+class MyHashSet {
+private:
+    struct node{
+        int data;
+        node* next;
+
+        node(const int d,node *n=nullptr){
+            data=d;
+            next=n;
+        }
+        node(){next=nullptr;}
+    };
+
+    node **arr;
+    int size=1001;
+public:
+    /** Initialize your data structure here. */
+    MyHashSet() {
+        arr=new node*[size];
+        for(int i=0;i<size;i++){
+            arr[i]=nullptr;
+        }
+    }
+    
+    void add(int key) {
+        int pos=key%size;
+        node *p=arr[pos];
+        while(p && p->data!=key) p=p->next;
+        if(!p){//不重复添加
+            arr[pos]=new node(key,arr[pos]);
+        }
+    }
+    
+    void remove(int key) {
+        int pos=key%size;
+        if(!arr[pos]) return;
+
+        node *p=arr[pos];
+        if(arr[pos]->data==key){
+            arr[pos]=p->next;
+            delete p;
+            return;
+        }
+
+        while(p->next && p->next->data!=key) p=p->next;
+        if(p->next){
+            node *q=p->next;
+            p->next=q->next;
+            delete q;
+        }
+    }
+    
+    /** Returns true if this set contains the specified element */
+    bool contains(int key) {
+        int pos=key%size;
+        node *p=arr[pos];
+        while(p && p->data!=key) p=p->next;
+        return p!=nullptr;
+    }
+};
+```
+
+STL容器写法
+
+```c++
+class MyHashSet {
+private:
+    vector<list<int>> arr;
+    static const int size=1001;
+public:
+    /** Initialize your data structure here. */
+    MyHashSet() {
+        arr.resize(size);
+    }
+    
+    void add(int key) {
+        int pos=key%size;
+        for(auto it=arr[pos].begin();it!=arr[pos].end();it++){
+            if((*it) == key) return;
+        }
+        arr[pos].push_back(key);
+    }
+    
+    void remove(int key) {
+        int pos=key%size;
+        for(auto it=arr[pos].begin();it!=arr[pos].end();it++){
+            if((*it) == key){
+                arr[pos].erase(it);
+                return;
+            }
+        }
+    }
+    
+    /** Returns true if this set contains the specified element */
+    bool contains(int key) {
+        int pos=key%size;
+        for(auto it=arr[pos].begin();it!=arr[pos].end();it++){
+            if((*it) == key) return true;
+        }
+        return false;
+    }
+};
+```
+
+
+
+# 33
+
+搜索旋转排序数组
+
+有个坑：当旋转点为0时其实没有旋转
+
+二分搜索：左右两半总有一半是升序的，可以判断在不在这一段里
+
+```c++
+class Solution {
+public:
+    int search(vector<int>& nums, int target) {
+        int n=nums.size();
+        if(!n) return -1;
+        if(n==1) return nums[0]==target? 0:-1;
+
+        int l=0,r=n-1;
+        int mid;
+
+        while(l<=r){
+            mid=(l+r)/2;
+            if(nums[mid]==target) return mid;
+
+            if(nums[l]<=nums[mid]){
+                if(nums[l]<=target && target<nums[mid]){
+                    r=mid-1;
+                }else{
+                    l=mid+1;
+                }
+            }else{
+                if(nums[mid]<target && target<=nums[r]){
+                    l=mid+1;
+                }else{
+                    r=mid-1;
+                }
+            }
+        }
+        return -1;
+    }
+};
+```
+
+
+
+# 706
+
+设计哈希映射
+
+将单一的key改为键值对
+
+type: pair<int,int>
+
+创建：make_pair(key,value)
+
+访问元素：.first,.second
+
+```c++
+class MyHashMap {
+public:
+    vector<list<pair<int,int>>> arr;
+    static const int size=1001;
+    /** Initialize your data structure here. */
+    MyHashMap() {
+        arr.resize(size);
+    }
+    
+    /** value will always be non-negative. */
+    void put(int key, int value) {
+        int pos=key%size;
+        for(auto it=arr[pos].begin();it!=arr[pos].end();it++){
+            if((*it).first == key){
+                (*it).second=value;
+                return;
+            }
+        }
+        arr[pos].push_back(make_pair(key,value));
+    }
+    
+    /** Returns the value to which the specified key is mapped, or -1 if this map contains no mapping for the key */
+    int get(int key) {
+        int pos=key%size;
+        for(auto it=arr[pos].begin();it!=arr[pos].end();it++){
+            if((*it).first == key) return (*it).second;
+        }
+        return -1;
+    }
+    
+    /** Removes the mapping of the specified value key if this map contains a mapping for the key */
+    void remove(int key) {
+        int pos=key%size;
+        for(auto it=arr[pos].begin();it!=arr[pos].end();it++){
+            if((*it).first == key){
+                arr[pos].erase(it);
+                return;
+            }
+        }
+    }
+};
+```
+
+
+
+# 54
+
+螺旋矩阵
+
+一层一层
+
+遍历
+
+```c++
+class Solution {
+public:
+    vector<int> spiralOrder(vector<vector<int>>& matrix) {
+        int m=matrix.size();
+        int n=matrix[0].size();
+        int num=m*n;
+        vector<int> ans;
+
+        int top=0,bottom=m-1;
+        int left=0,right=n-1;
+        
+        while(num){
+            for(int j=left;j<=right && num;j++){
+                ans.push_back(matrix[top][j]);
+                num--;
+            }
+            top++;
+            for(int j=top;j<=bottom && num;j++){
+                ans.push_back(matrix[j][right]);
+                num--;
+            }
+            right--;
+            for(int j=right;j>=left && num;j--){
+                ans.push_back(matrix[bottom][j]);
+                num--;
+            }
+            bottom--;
+            for(int j=bottom;j>=top && num;j--){
+                ans.push_back(matrix[j][left]);
+                num--;
+            }
+            left++;
+        }
+        return ans;
+    }
+};
+```
+
+
+
+# 59
+
+螺旋矩阵II
+
+跟上一道差不多，不过矩阵是正方形的
+
+```
+class Solution {
+public:
+    vector<vector<int>> generateMatrix(int n) {
+        vector<vector<int>> m(n,vector<int>(n));
+
+        int len=n*n;
+        int b=0,el=1;
+
+        while(el<=len){
+            for(int i=b;i<n-b && el<=len;i++){
+                m[b][i]=el;
+                el++;
+            }
+            for(int i=b+1;i<n-b && el<=len;i++){
+                m[i][n-b-1]=el;
+                el++;
+            }
+            for(int i=n-b-2;i>=b && el<=len;i--){
+                m[n-b-1][i]=el;
+                el++;
+            }
+            for(int i=n-b-2;i>=b+1 && el<=len;i--){
+                m[i][b]=el;
+                el++;
+            }
+            b++;
+        }
+        return m;
+    }
+};
+```
+
+
+
+# 115
+
+不同的子序列
+
+动态规划
+
+假设字符串 $s$ 和 $t$ 的长度分别为 $m$ 和 $n$。如果 $t$ 是 $s$ 的子序列，则 $s$ 的长度一定大于或等于 $t$ 的长度，如果 $m<n$，则 $t$ 一定不是 $s$ 的子序列，直接返回 $0$。
+
+创建二维数组 $dp$，其中 $dp[i][j]$ 表示在 $s[i:]$ 的子序列中 $t[j:]$ 出现的个数。
+
+上述表示中，$s[i:]$ 表示 $s$ 从下标 $i$ 到末尾的子字符串，$t[j:] $表示 $t$ 从下标 $j$ 到末尾的子字符串。
+
+考虑动态规划的边界情况：
+
+当 $j=n$ 时，$t[j:] $为空字符串，由于空字符串是任何字符串的子序列，因此对任意 $0 \le i \le m$，有 $dp[i][n]=1$
+
+当 $i=m$ 且 $j<n $时，$s[i:] $为空字符串，$t[j:]$ 为非空字符串，由于非空字符串不是空字符串的子序列，因此对任意 $0 \le j<n$，有 $dp[m][j]=0$。
+
+当 $i<m$ 且$ j<n$ 时，考虑 $dp[i][j]$ 的计算：
+
+- 当 $s[i]=t[j]$ 时，$dp[i][j] $由两部分组成：
+
+  如果 $ s[i]$ 和 $t[j]$ 匹配，则考虑 $t[j+1:]$ 作为 $s[i+1:]$ 的子序列，子序列数为 $dp[i+1][j+1]$；
+
+  如果 $ s[i]$ 不和 $t[j]$ 匹配，则考虑 $t[j:] $作为 $s[i+1:] $的子序列，子序列数为 $dp[i+1][j]$。
+
+  因此当 $s[i]=t[j]$ 时，有 $dp[i][j]=dp[i+1][j+1]+dp[i+1][j]$。
+
+- 当 $s[i] \ne t[j]$时，$s[i]$ 不能和 $t[j]$ 匹配，因此只考虑 $t[j:]$ 作为 $s[i+1:]$的子序列，子序列数为 $dp[i+1][j]$。
+
+
+```c++
+class Solution {
+public:
+    int numDistinct(string s, string t) {
+        int m=s.length();
+        int n=t.length();
+
+        if(m<n) return 0;
+
+        vector<vector<long>> dp(m+1,vector<long>(n+1));
+        for(int i=0;i<=m;i++){
+            dp[i][n]=1;
+        }
+
+        for(int i=m-1;i>=0;i--){
+            for(int j=n-1;j>=0;j--){
+                if(s[i]==t[j]){
+                    dp[i][j]=dp[i+1][j+1]+dp[i+1][j];
+                }else{
+                    dp[i][j]=dp[i+1][j];
+                }
+            }
+        }
+
+        return dp[0][0];
+    }
+};
+```
+
+
+
+# 92
+
+反转链表
+
+方法一：将需要反转的部分反转之后，再和剩余部分拼接起来，缺点：需要两次遍历
+
+方法二：只遍历一次，在需要反转的区间内，将每一个节点插入反转的起始点
+
+![image.png](https://pic.leetcode-cn.com/1615105296-bmiPxl-image.png)
+
+```c++
+class Solution {
+public:
+    ListNode* reverseBetween(ListNode* head, int left, int right) {
+        ListNode* dummy=new ListNode(0, head);
+        ListNode* pre=dummy;
+
+        for(int i=0;i<left-1;i++){
+            pre=pre->next;
+        }
+
+        ListNode *curr, *nex;
+        curr=pre->next;
+        for(int i=0;i<right-left;i++){
+            nex=curr->next;
+            curr->next=nex->next;
+            nex->next=pre->next;
+            pre->next=nex;
+        }
+
+        return dummy->next;
+    }
+};
+```
+
+
+
+# 173
+
+二叉树搜索迭代器
+
+中序遍历一遍存到数组里
+
+```c++
+class BSTIterator {
+private:
+    vector<int> vec;
+    int it=0;
+    void traverse(TreeNode* root){
+        if(!root) return;
+        traverse(root->left);
+        vec.push_back(root->val);
+        traverse(root->right);
+    }
+public:
+    BSTIterator(TreeNode* root) {
+        traverse(root);
+    }
+    
+    int next() {
+        return vec[it++];
+    }
+    
+    bool hasNext() {
+        return it<vec.size();
+    }
+};
+```
+
+
+
+# 300
+
+最长递增子序列
+
+dp[i]：以nums[i]结尾的最长递增子序列
+
+dp数组里最大的那个就是所求
+
+```c++
+class Solution {
+public:
+    int lengthOfLIS(vector<int>& nums) {
+        int n=nums.size();
+        vector<int> dp(n,1);
+
+        for(int i=1;i<n;i++){
+            for(int j=i-1;j>=0;j--){
+                if(nums[j]<nums[i]){
+                    dp[i]=max(dp[i],dp[j]+1);
+                }
+            }
+        }
+
+        return *max_element(dp.begin(),dp.end());
+    }
+};
+```
+
+贪心+二分查找
+
+要使上升子序列尽可能的长，则要让序列上升得尽可能慢，每次在上升子序列最后加上得数要尽可能小
+
+用dp[i]维护长度为i的最长上升子序列的最小值，用len记录目前最长上升子序列的长度，dp[i]是单调递增的
+
+```c++
+class Solution {
+public:
+    int lengthOfLIS(vector<int>& nums) {
+        int n=nums.size();
+        vector<int> dp(n+1,0);
+        dp[1]=nums[0];
+
+        int len=1;
+        for(int i=1;i<n;i++){
+            if(nums[i]>dp[len]){
+                dp[++len]=nums[i];//加在最后面
+            }else{
+                auto pos=lower_bound(dp.begin()+1,dp.begin()+len+1,nums[i]);
+                //二分查找比nums[i]大的数，并把它换掉
+                *(pos)=nums[i];
+            }
+        }
+        return len;
+    }
+};
+```
+
+
+
+# 190
+
+颠倒二进制位
+
+逐位操作
+
+```c++
+class Solution {
+public:
+    uint32_t reverseBits(uint32_t n) {
+        uint32_t ans=0;
+        for(int i=0;i<32;i++){
+            ans<<=1;
+            ans+=(n%2);
+            n>>=1;
+        }
+        return ans;
+    }
+};
+```
+
+位运算分治：妙啊
+
+递归执行翻转，左半部分放到右边，右半部分放到左边
+
+可以利用位掩码和移位运算
+
+对于最底层，要交换所有奇偶位
+
+```c++
+class Solution {
+private:
+    const uint32_t M1 = 0x55555555; // 01010101010101010101010101010101
+    const uint32_t M2 = 0x33333333; // 00110011001100110011001100110011
+    const uint32_t M4 = 0x0f0f0f0f; // 00001111000011110000111100001111
+    const uint32_t M8 = 0x00ff00ff; // 00000000111111110000000011111111
+
+public:
+    uint32_t reverseBits(uint32_t n) {
+        n = n >> 1 & M1 | (n & M1) << 1;
+        n = n >> 2 & M2 | (n & M2) << 2;
+        n = n >> 4 & M4 | (n & M4) << 4;
+        n = n >> 8 & M8 | (n & M8) << 8;
+        return n >> 16 | n << 16;
     }
 };
 ```
