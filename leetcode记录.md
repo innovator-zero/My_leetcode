@@ -469,7 +469,7 @@ class Solution:
                     nums[j]=nums[i]
                 j+=1
         
-        return jpy
+        return j
 ```
 
 
@@ -504,45 +504,50 @@ class Solution:
 
 字符串匹配：KMP
 
-```python
-class Solution:
-    def strStr(self, haystack: str, needle: str) -> int:
-        n=len(haystack)
-        m=len(needle)
+next[i]指向下一个尝试匹配的位置，即相同的两端后面一个
 
-        if m==0:
-            return 0
-        if n==0:
-            return -1
-        
-        ne=[0]*m
-        ne[0]=-2
-        if m>1:
-            ne[1]=-1
+getnext()其实是自己和自己匹配
 
-        for i in range(2,m):
-            j=ne[i-1]+1
-            while needle[i-1]!=needle[j] and j>-1:
-                j=ne[j]+1
-            ne[i]=j
+```c++
+class Solution {
+public:
+    vector<int> getnext(string s){
+        vector<int> next(s.length(),0);
+        next[0]=-1;
 
-        j=0
-        i=0
-        start=-1
+        int i=0,j=-1;
+        while(i<s.length()-1){
+            if(j==-1 || s[i]==s[j]){//j==-1必须写在前面
+                i++;j++;
+                next[i]=j;
+            }else{
+                j=next[j];
+            }
+        }
+        return next;
+    }
+    int strStr(string haystack, string needle) {
+        int i=0,j=0;
+        int n=haystack.length();
+        int m=needle.length();
 
-        while start==-1 and i<n:
-            if needle[j]==haystack[i]:
-                j+=1
-                i+=1
-            else:
-                j=ne[j]+1
-                if j==-1:
-                    j=0
-                    i+=1
-            if j==m:
-                start=i-m
-        
-        return start
+        if (m==0) return 0;
+
+        vector<int> next=getnext(needle);
+
+        while(i<n && j<m){
+            if(j==-1 || haystack[i]==needle[j]){
+                i++;j++;//当j==-1，从下一个i开始，j从0开始
+            }else{
+                j=next[j];
+            }
+            if (j==m){
+                return i-j;
+            }
+        }
+        return -1;
+    }
+};
 ```
 
 
@@ -5188,6 +5193,646 @@ public:
         n = n >> 4 & M4 | (n & M4) << 4;
         n = n >> 8 & M8 | (n & M8) << 8;
         return n >> 16 | n << 16;
+    }
+};
+```
+
+
+
+# 74
+
+搜索二维矩阵
+
+方法一：两次二分查找
+
+```c++
+class Solution {
+public:
+    bool searchMatrix(vector<vector<int>>& matrix, int target) {
+        int m=matrix.size();
+        int n=matrix[0].size();
+        int low,high;
+        low=0;
+        high=m;
+        
+        while(low<high-1){
+            int mid=(low+high)/2;
+            if(matrix[mid][0]==target) return true;
+            if(matrix[mid][0]<target){
+                low=mid;
+            }else{
+                high=mid;
+            }
+        }
+
+        auto it=lower_bound(matrix[low].begin(),matrix[low].end(),target);
+        if(it != matrix[low].end() && *it == target) return true;
+        return false;
+    }
+};
+```
+
+方法二：一次二分查找，把下标映射到原来的位置上
+
+```c++
+class Solution {
+public:
+    bool searchMatrix(vector<vector<int>>& matrix, int target) {
+        int m=matrix.size();
+        int n=matrix[0].size();
+        int low,high;
+        low=0;
+        high=m*n-1;
+        
+        while(low<=high){
+            int mid=(low+high)/2;
+            int x=matrix[mid/n][mid%n];
+            if(x==target) return true;
+            if(x<target){
+                low=mid+1;
+            }else{
+                high=mid-1;
+            }
+        }
+
+        return false;
+    }
+};
+```
+
+
+
+# 90
+
+子集II
+
+如何保证不重复：
+
+先将数组排序，对于同样的数字，选择的时候必须保证前面的被选了，否则这个数字不能被选中
+
+方法一：迭代$2^n$种可能
+
+```c++
+class Solution {
+public:
+    vector<vector<int>> subsetsWithDup(vector<int>& nums) {
+        vector<int> t;
+        vector<vector<int>> ans;
+
+        int n=nums.size();
+        sort(nums.begin(),nums.end());
+        for(int mask=0;mask<(1<<n);mask++){
+            t.clear();
+            bool flag=true;
+            for(int i=0;i<n;i++){
+                if(mask & (1<<i)){
+                    if(i>0 && (mask & (1<<(i-1)))==0 && nums[i]==nums[i-1]){
+                        flag=false;
+                        break;
+                    }
+                    t.push_back(nums[i]);
+                }
+            }
+            if(flag){
+                ans.push_back(t);
+            }
+        }
+        return ans;
+    }
+};
+```
+
+方法二：递归
+
+```c++
+class Solution {
+public:
+    vector<int> t;
+    vector<vector<int>> ans;
+    int n;   
+
+    void dfs(bool choosePre, int cur, vector<int>& nums){
+        if(cur==n){
+            ans.push_back(t);
+            return;
+        }
+
+        dfs(false, cur+1, nums);//不选当前数字
+
+        if(!choosePre && cur>0 && nums[cur]==nums[cur-1]){
+            return;//当前数字不可以选
+        }
+        //选当前数字
+        t.push_back(nums[cur]);
+        dfs(true, cur+1, nums);
+        t.pop_back();
+    }
+
+    vector<vector<int>> subsetsWithDup(vector<int>& nums) {
+        n=nums.size();
+        sort(nums.begin(),nums.end());
+        dfs(false,0,nums);
+        return ans;
+    }
+};
+```
+
+
+
+# 17.21
+
+直方图的水量
+
+方法一：dp
+
+某一位置上水能达到的最大高度等于两边最大高度的最小值，能接的水量等于最大高度减去height
+
+用dp求每个位置左右的最大高度
+
+```c++
+class Solution {
+public:
+    int trap(vector<int>& height) {
+        int n=height.size();
+        if(!n) return 0;
+        
+        vector<int> leftMax(n);
+        vector<int> rightMax(n);
+
+        leftMax[0]=height[0];
+        for(int i=1;i<n;i++){
+            leftMax[i]=max(leftMax[i-1],height[i]);
+        }
+
+        rightMax[n-1]=height[n-1];
+        for(int i=n-2;i>=0;i--){
+            rightMax[i]=max(rightMax[i+1],height[i]);
+        }
+
+        int sum=0;
+        for(int i=0;i<n;i++){
+            sum+=min(leftMax[i],rightMax[i])-height[i];
+        }
+        return sum;
+    }
+};
+```
+
+方法二：单调栈
+
+栈中元素单调递减，相当于横着算水量
+
+遍历到下标i时，如果栈中至少有两个元素，栈顶元素为top，下一个元素为left，有height[left]>=height[top]
+
+如果height[i]>height[top]，则说明有一个能接水的区域（横着）
+
+```c++
+class Solution {
+public:
+    int trap(vector<int>& height) {
+        stack<int> s;
+        int ans=0;
+        int n=height.size();
+
+        for(int i=0;i<n;i++){
+            while(!s.empty() && height[i]>height[s.top()]){
+                int top=s.top();
+                s.pop();
+
+                if(s.empty()){
+                    break;
+                }
+                int left=s.top();
+                int width=i-left-1;
+                int hei=min(height[i],height[left])-height[top];
+                ans+=hei*width;
+            }
+            s.push(i);
+        }
+        return ans;
+    }
+};
+```
+
+方法三：双指针
+
+用双指针代替dp
+
+```c++
+class Solution {
+public:
+    int trap(vector<int>& height) {
+        int ans=0;
+        int n=height.size();
+        int left=0,right=n-1;
+        int leftMax=0,rightMax=0;
+
+        while(left<right){
+            leftMax=max(leftMax,height[left]);
+            rightMax=max(rightMax,height[right]);
+            if(height[left]<height[right]){
+                ans+=leftMax-height[left];
+                left++;
+            }else{
+                ans+=rightMax-height[right];
+                right--;
+            }
+        }
+        return ans;
+    }
+};
+```
+
+
+
+# 1143
+
+最长公共子序列
+
+dp: dp\[i\][j]表示text1[0...i-1]和text2[0...j-1]的最长公共子序列
+
+```c++
+class Solution {
+public:
+    int longestCommonSubsequence(string text1, string text2) {
+        int n=text1.length();
+        int m=text2.length();
+        vector<vector<int>> dp(n+1,vector<int>(m+1,0));
+
+        for(int i=1;i<n+1;i++){
+            for(int j=1;j<m+1;j++){
+                if(text1[i-1]==text2[j-1]){
+                    dp[i][j]=dp[i-1][j-1]+1;
+                }else{
+                    dp[i][j]=max(dp[i-1][j],dp[i][j-1]);
+                }
+            }
+        }
+
+        return dp[n][m];
+    }
+};
+```
+
+
+
+# 781
+
+森林中的兔子
+
+如果一只兔子和n个兔子颜色相同，则这n+1只可以是一个颜色的
+
+ceil(n/(x+1))=(n+x)/(x+1)
+
+```c++
+class Solution {
+public:
+    int numRabbits(vector<int>& answers) {
+        vector<int> count(1000,0);
+
+        for(int i=0;i<answers.size();i++){
+            count[answers[i]]+=1;
+        }
+
+        int sum=0;
+        for(int i=0;i<1000;i++){
+            sum+=(count[i]+i)/(i+1)*(i+1);
+        }
+
+        return sum;
+    }
+};
+```
+
+
+
+# 81
+
+搜索旋转排序数组II
+
+由于数组中可能有重复元素，二分查找时可能会出现$a[l]=a[mid]=a[r]$，此时无法判断左右两个区间哪个是有序的。只能将左边界加一，右边界减一，然后在新的区间上继续。
+
+```c++
+class Solution {
+public:
+    bool search(vector<int>& nums, int target) {
+        int n=nums.size();
+        if(!n) return false;
+        if(n==1) return nums[0]==target;
+
+        int l=0,r=n-1;
+        int mid;
+
+        while(l<=r){
+            mid=(l+r)/2;
+            if(nums[mid]==target) return true;
+
+            if(nums[l]==nums[mid] && nums[r]==nums[mid]){
+                l++;
+                r--;
+            }else if(nums[l]<=nums[mid]){
+                if(nums[l]<=target && target<nums[mid]){
+                    r=mid-1;
+                }else{
+                    l=mid+1;
+                }
+            }else{
+                if(nums[mid]<target && target<=nums[r]){
+                    l=mid+1;
+                }else{
+                    r=mid-1;
+                }
+            }
+        }
+        return false;
+    }
+};
+```
+
+
+
+# 897
+
+递增顺序搜索树
+
+```c++
+class Solution {
+public:
+    vector<int> vec;
+    void traverse(TreeNode* root){
+        if (!root){
+            return;
+        }
+
+        traverse(root->left);
+        vec.push_back(root->val);
+        traverse(root->right);
+    }
+    TreeNode* increasingBST(TreeNode* root) {
+        traverse(root);
+
+        TreeNode* r=new TreeNode(vec[0]);
+        TreeNode* prev=r;
+        for(int i=1;i<vec.size();i++){
+            TreeNode* t=new TreeNode(vec[i]);
+            prev->right=t;
+            prev=t;
+        }
+        return r;
+    }
+};
+```
+
+
+
+# 34
+
+在排序数组中查找元素的第一个和最后一个位置
+
+基于二分查找，但要仔细思考
+
+等价于找大于等于target的第一个数和大于target的第一个数
+
+```c++
+class Solution {
+public:
+    vector<int> searchRange(vector<int>& nums, int target) {
+        vector<int> ans={-1,-1};
+        int n=nums.size();
+        if(n==0) return ans;
+        
+        int l=0,r=n-1;
+        while(l<r){
+            int mid=(l+r)/2;
+            if(nums[mid]>=target){
+                r=mid;
+            }else{
+                l=mid+1;
+            }
+        }
+        if (nums[l]!=target){//target不存在
+            return ans;
+        }
+
+        ans[0]=l;
+        l=0;r=n;//可能没有比target更大的数
+        while(l<r){
+            int mid=(l+r)/2;
+            if(nums[mid]<=target){
+                l=mid+1;
+            }else{
+                r=mid;
+            }
+        }
+        ans[1]=l-1;
+        return ans;
+    }
+};
+```
+
+
+
+# 1011
+
+在D天内送达包裹的能力
+
+二分查找
+
+上限是所有的和，下限是最大值
+
+```c++
+class Solution {
+public:
+    bool test(vector<int>& weights, int D, int m){//测试某值是否可行
+        int d=1;
+        int sum=0;
+        for(int i=0;i<weights.size();i++){
+            if(sum+weights[i]>m){
+                d++;
+                sum=weights[i];
+                if(d>D){
+                    return false;
+                }
+            }else{
+                sum+=weights[i];
+            }
+        }
+        return true;
+    }
+
+    int shipWithinDays(vector<int>& weights, int D) {
+        int left=*max_element(weights.begin(),weights.end());
+        int right=accumulate(weights.begin(),weights.end(),0);
+
+        while(left<right){
+            int mid=(left+right)/2;
+            if(test(weights, D, mid)){
+                right=mid;
+            }else{
+                left=mid+1;
+            }
+        }
+
+        return left;
+    }
+};
+```
+
+
+
+# 692 
+
+前K个高频单词
+
+哈希表加排序
+
+这里自定义排序用的是lambda函数写法
+
+```c++
+class Solution {
+public:
+    vector<string> topKFrequent(vector<string>& words, int k) {
+        unordered_map<string, int> cnt;
+        for (auto & word: words){
+            cnt[word]++;
+        }
+
+        vector<string> res;
+        for (auto & [key,value]:cnt){
+            res.emplace_back(key);
+        }
+
+        sort(res.begin(),res.end(), [&] (const string &a, const string &b){
+            return cnt[a]==cnt[b]? a<b: cnt[a]>cnt[b];
+        });
+        res.erase(res.begin()+k,res.end());
+        return res;
+    }
+};
+```
+
+
+
+# 50
+
+Pow(x, n)
+
+快速幂算法
+
+考虑指数的二进制数，如果对应位上的
+
+```c++
+class Solution {
+public:
+    double myPow(double x, long long n) {
+        double result = 1;
+        if(x == 1 || n == 0){
+            return 1;
+        }
+
+        if(n < 0){
+            x = 1/x;
+            n = -n;
+        }
+
+        while(n){
+            if(n % 2){
+                result *= x; 
+            }
+            n >>= 1;
+            x *= x; 
+        }
+        return result;
+    }
+};
+```
+
+
+
+# 215
+
+数组中的第K个最大元素
+
+分治：用快排中划分的思想
+
+```c++
+class Solution {
+public:
+    int findk(vector<int>& nums, int left, int right, int k){
+        //以pivot划分，pivot左边小右边大
+        int pivot=nums[left];
+        int low=left, high=right;
+        while(low<high){
+            while(nums[high]>=pivot && low<high) high--;
+            while(nums[low]<=pivot && low<high) low++;
+            if(low<high){
+                swap(nums[low],nums[high]);
+            }
+        }
+        swap(nums[low],nums[left]);
+        
+        if((right-low+1)==k){//右边到pivot有k个，pivot就是第k大
+            return pivot;
+        }else if((right-low+1)<k){//右边到pivot少于k个，说明第k大在pivot左边
+            return findk(nums,left,low-1,k-right+low-1);
+        }else{//右边到pivot大于k个，说明第k大在pivot右边
+            return findk(nums,low+1,right,k);
+        }
+    }
+    int findKthLargest(vector<int>& nums, int k) {
+        return findk(nums,0,nums.size()-1,k);
+    }
+};
+```
+
+
+
+# 剑指Offer 51
+
+数组中的逆序对
+
+归并排序：在归并的时候计算逆序对的数量
+
+```c++
+class Solution {
+public:
+    int cnt=0;
+    void merge(vector<int>& nums, int left, int mid, int right){
+        int i=left, j=mid, k=0;
+        vector<int> tmp(right-left+1);
+         while(i<mid && j<=right){
+             if(nums[i]<=nums[j]){
+                 tmp[k++]=nums[i++];
+             }else{
+                 tmp[k++]=nums[j++];
+                 cnt+=(mid-i);//左边从i到mid-1的数都比右边j大，都是逆序对
+             }
+         }
+
+        //左边的数没有结束
+         if(j>right){
+             for(int t=0;t<mid-i;t++){
+                 nums[right-t]=nums[mid-1-t];
+             }
+         }
+        
+		//复制回去
+         for(int t=0;t<k;t++){
+             nums[left+t]=tmp[t];
+         }
+    }
+
+    void mergesort(vector<int>& nums, int left, int right){ 
+        if(left>=right) return;
+        int mid=(left+right)/2;
+        mergesort(nums, left, mid);
+        mergesort(nums, mid+1, right);
+        merge(nums, left, mid+1, right);
+    }
+
+    int reversePairs(vector<int>& nums) {
+        mergesort(nums,0,nums.size()-1);
+        return cnt;
     }
 };
 ```
